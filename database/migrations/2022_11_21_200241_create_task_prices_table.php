@@ -23,6 +23,7 @@ class CreateTaskPricesTable extends Migration
             $table->float('front_max')->default(0);
             $table->float('back_min')->default(0);
             $table->float('back_max')->default(0);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -22,6 +22,7 @@ class CreatePricesTable extends Migration
             $table->float('back')->default(2000);
             $table->float('qa')->default(2000);
             $table->float('content')->default(2000);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

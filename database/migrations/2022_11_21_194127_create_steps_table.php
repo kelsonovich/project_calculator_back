@@ -22,6 +22,7 @@ class CreateStepsTable extends Migration
             $table->integer('parallels')->nullable();
             $table->integer('sort')->default('100');
             $table->integer('task_id');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -21,7 +21,7 @@ class CreateProjectsTable extends Migration
             $table->date('end')->nullable();
             $table->integer('price_id');
             $table->integer('hours_per_week')->default(32);
-
+            $table->softDeletes();
             $table->timestamps();
         });
     }
