@@ -41,6 +41,8 @@ class CalculateProjectService
         $this->setTotal($project);
         $this->setSteps($project);
 
+        $project->agreementWeeks = 2;
+
 
 //        $this->setSteps($project);
 //        $this->getTotalPrice($project);
@@ -239,8 +241,15 @@ class CalculateProjectService
             $newStep[$newKey] = $item;
         }
 
-        foreach ($newStep as $key => &$step) {
-            $step['weeks'] = round($step['hours'] / $project->hours_per_week);
+        $start = 0;
+        foreach ($newStep as &$step) {
+            $numberOfWeeks = round($step['hours'] / $project->hours_per_week);
+            $step['weeks'] = $numberOfWeeks;
+            $step['start'] = $start;
+
+            $start += $numberOfWeeks;
+
+            $step['end'] = $start;
         }
 
         $project->steps = $newStep;
