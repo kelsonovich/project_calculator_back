@@ -15,11 +15,11 @@ class CreateOptionsTable extends Migration
     {
         Schema::create('options', function (Blueprint $table) {
             $table->id();
-            $table->integer('project_id');
+            $table->integer('project_id')->default(0);
             $table->string('title');
             $table->text('description')->nullable();
-            $table->integer('quantity');
-            $table->float('price');
+            $table->integer('quantity')->nullable();
+            $table->float('price')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

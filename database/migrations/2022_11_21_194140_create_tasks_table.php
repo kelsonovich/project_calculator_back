@@ -15,10 +15,17 @@ class CreateTasksTable extends Migration
     {
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
-            $table->integer('price_id');
+            $table->integer('project_id')->nullable();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->integer('sort')->nullable();
+            $table->integer('sort')->default(100);
+            $table->float('analyst_hours')->nullable();
+            $table->float('designer_hours_min')->nullable();
+            $table->float('designer_hours_max')->nullable();
+            $table->float('front_hours_min')->nullable();
+            $table->float('front_hours_max')->nullable();
+            $table->float('back_hours_min')->nullable();
+            $table->float('back_hours_max')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

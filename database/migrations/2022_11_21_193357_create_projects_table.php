@@ -17,9 +17,8 @@ class CreateProjectsTable extends Migration
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->date('start');
+            $table->date('start')->nullable();
             $table->date('end')->nullable();
-            $table->integer('price_id');
             $table->integer('hours_per_week')->default(32);
             $table->softDeletes();
             $table->timestamps();

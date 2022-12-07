@@ -1,0 +1,50 @@
+openapi: 3.0.0
+servers:
+  - url: https://127.0.0.1/api
+info:
+  version: "0.0.1"
+  title: "Project calculator. SCID"
+  contact:
+    email: "dasavisnky@scid.ru"
+tags:
+  - name: Project
+
+paths:
+  /project:
+    get:
+      summary: "Получение списка всех проектов"
+      responses:
+        "200":
+          description: "OK"
+        "401":
+          description: "Необходимо авторизоваться"
+      tags:
+        - Project
+
+components:
+  schemas:
+    Success:
+      type: object
+      properties:
+        error:
+          example: null
+        message:
+          type: string
+          example: ""
+        result:
+          type: boolean
+          example: true
+        success:
+          type: boolean
+          example: true
+
+
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: [ ]
