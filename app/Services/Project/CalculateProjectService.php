@@ -194,16 +194,28 @@ class CalculateProjectService
             }
         }
 
+        $step['qa']['title'] = $this->steps['qa'];
+        $step['qa']['hours'] = (float) $project->qa['front_hours_min'] + (float) $project->qa['back_hours_min'];
+
         $step['buffer']['title'] = $this->steps['buffer'];
         $step['buffer']['hours'] =
             (
-                $this->getAverage($step['front_hours_max']['hours'], $step['front_hours_min']['hours']) -
-                $this->getAverage($project->qa['front_hours_max'], $project->qa['front_hours_min']) -
+                $this->getAverage(
+                    $step['front_hours_max']['hours'] + $project->qa['front_hours_max'],
+                    $step['front_hours_min']['hours'] + $project->qa['front_hours_min']
+                ) -
+                $this->getAverage(
+                    $project->qa['front_hours_max'],
+                    $project->qa['front_hours_min'],
+                ) -
                 $step['front_hours_min']['hours']
             )
             +
             (
-                $this->getAverage($step['back_hours_max']['hours'], $step['back_hours_min']['hours']) -
+                $this->getAverage(
+                    $step['back_hours_max']['hours'] + $project->qa['back_hours_max'],
+                    $step['back_hours_min']['hours'] + $project->qa['back_hours_min']
+                ) -
                 $this->getAverage($project->qa['back_hours_max'], $project->qa['back_hours_min']) -
                 $step['back_hours_min']['hours']
             )
