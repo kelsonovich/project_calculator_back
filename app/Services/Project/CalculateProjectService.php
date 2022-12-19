@@ -271,20 +271,26 @@ class CalculateProjectService
 
     private function setDuration (Project $project)
     {
+        $duration = 0;
         $durationInWeeks = 0;
+
+        $end = $project->start;
+
         foreach ($project->steps as $key => $step) {
             if ($key !== 'qa') {
                 $durationInWeeks += $step['weeks'];
             }
         }
 
-        $end = Carbon::create($project->start)->addWeeks($durationInWeeks + self::AGREEMENT_FOR)->format('d.m.Y');
 
-        $duration = round((Carbon::create($end)->diffInDays($project->start) - 1) / 7 / 4.5, 2);
+        if ($durationInWeeks !== (float) 0) {
+            $end      = Carbon::create($project->start)->addWeeks($durationInWeeks + self::AGREEMENT_FOR)->format('d.m.Y');
+            $duration = round((Carbon::create($end)->diffInDays($project->start) - 1) / 7 / 4.5, 2);
+        }
 
         $project->duration = $duration;
-        $project->start = Carbon::create($project->start)->format('Y-m-d');
-        $project->end = Carbon::create($end)->format('Y-m-d');
+        $project->start    = Carbon::create($project->start)->format('Y-m-d');
+        $project->end      = Carbon::create($end)->format('Y-m-d');
     }
 
     private function prepareNumbers (Project $project): void

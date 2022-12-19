@@ -56,4 +56,17 @@ class Project extends Model
     {
         return $this->hasMany(Option::class);
     }
+
+    public static function boot ()
+    {
+        parent::boot();
+
+        static::deleted(function($product)
+        {
+            $product->price()->delete();
+            $product->steps()->delete();
+            $product->tasks()->delete();
+            $product->options()->delete();
+        });
+    }
 }

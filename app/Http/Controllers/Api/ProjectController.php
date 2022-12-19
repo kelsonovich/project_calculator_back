@@ -48,9 +48,7 @@ class ProjectController extends Controller
     {
         $project = $this->createProjectService->create($request);
 
-        return response()->json([
-            'id' => $project->id
-        ], 201);
+        return response()->json(new ProjectResource($project), 201);
     }
 
     /**
