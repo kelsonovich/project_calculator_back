@@ -78,9 +78,9 @@ class ProjectController extends Controller
     {
         $project->update($request->all());
 
-        return response()->json([
-            'project' => $project,
-        ]);
+        return response()->json(
+            new ProjectResource($this->calculateProjectService->get($project))
+        );
     }
 
     /**
@@ -93,6 +93,6 @@ class ProjectController extends Controller
     {
         $project->delete();
 
-        return response()->json(null, 240);
+        return response()->json(null, 204);
     }
 }

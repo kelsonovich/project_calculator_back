@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Project\UpdateStepRequest;
+use App\Http\Requests\Project\Step\UpdateStepRequest;
 use App\Models\Step;
 use App\Services\Project\Step\CreateStepService;
 use Illuminate\Http\Request;

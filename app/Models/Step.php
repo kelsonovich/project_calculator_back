@@ -17,6 +17,7 @@ class Step extends Model
      */
     protected $fillable = [
         'title',
+        'code',
         'description',
         'project_id',
         'showInClient',

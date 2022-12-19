@@ -3,32 +3,37 @@
 namespace App\Services\Project;
 
 use App\Models\Project;
+use App\Models\Step;
 use App\Models\Task;
+use Carbon\Carbon;
+use http\Env\Response;
+use Illuminate\Database\Eloquent\Collection;
 
 class CalculateProjectService
 {
     const QA_COEFFICIENT = 0.2;
 
-    private $types = [
-        'analyst'  => 'Аналитика',
-        'designer' => 'Дизайн',
-        'front'    => 'Верстка',
-        'back'     => 'Программинг',
-        'qa'       => 'Тестирование',
-        'content'  => 'Контент',
-    ];
-
-    private $steps = [
-        'analyst'  => 'Аналитика',
-        'designer' => 'Дизайн',
-        'front'    => 'Верстка',
-        'back'     => 'Программинг',
-        'qa'       => 'Тестирование',
-        'content'  => 'Контент',
-        'buffer'   => 'Буфер по проекту',
-    ];
+    const AGREEMENT_FOR = 2;
 
     private $qa = ['front', 'back'];
+
+    private $taskFields = [
+        'analyst_price',
+        'designer_price_min',
+        'designer_price_max',
+        'front_price_min',
+        'front_price_max',
+        'back_price_min',
+        'back_price_max',
+
+        'analyst_hours',
+        'designer_hours_min',
+        'designer_hours_max',
+        'front_hours_min',
+        'front_hours_max',
+        'back_hours_min',
+        'back_hours_max',
+    ];
 
     public function get (Project $project): Project
     {
@@ -38,14 +43,13 @@ class CalculateProjectService
 
         $this->setCalculatedTasks($project);
         $this->setQa($project);
-        $this->setTotal($project);
         $this->setSteps($project);
+        $this->setTotal($project);
 
-        $project->agreementWeeks = 2;
+        $project->agreementWeeks = self::AGREEMENT_FOR;
 
-
-//        $this->setSteps($project);
-//        $this->getTotalPrice($project);
+        $this->setDuration($project);
+        $this->prepareNumbers($project);
 
         return $project;
     }
@@ -57,8 +61,6 @@ class CalculateProjectService
 
     private function getOptions (&$project): void
     {
-        $project->options = $project->options()->get();
-
         foreach ($project->options as &$option) {
             $option->totalPrice = $option->quantity * $option->price;
         }
@@ -66,8 +68,6 @@ class CalculateProjectService
 
     private function getTasks (&$project): void
     {
-        $project->tasks = $project->tasks()->get();
-
         foreach ($project->tasks as &$task) {
             foreach ($task->getFillable() as $key) {
                 if (strpos($key, 'hours') > 0) {
@@ -85,25 +85,17 @@ class CalculateProjectService
     {
         $calculatedTasks = [];
         foreach ($project->tasks as &$task) {
-            $calculatedTasks[] = [
-                'title'              => $task['title'],
-                'description'        => $task['description'],
-                'analyst_price'      => $task['analyst_price'],
-                'designer_price_min' => $task['designer_price_min'],
-                'designer_price_max' => $task['designer_price_max'],
-                'front_price_min'    => $task['front_price_min'],
-                'front_price_max'    => $task['front_price_max'],
-                'back_price_min'     => $task['back_price_min'],
-                'back_price_max'     => $task['back_price_max'],
-
-                'analyst_hours'      => $task['analyst_hours'],
-                'designer_hours_min' => $task['designer_hours_min'],
-                'designer_hours_max' => $task['designer_hours_max'],
-                'front_hours_min'    => $task['front_hours_min'],
-                'front_hours_max'    => $task['front_hours_max'],
-                'back_hours_min'     => $task['back_hours_min'],
-                'back_hours_max'     => $task['back_hours_max'],
+            $calculatedTask = [
+                'id'          => $task['id'],
+                'title'       => $task['title'],
+                'description' => $task['description'],
             ];
+
+            foreach ($this->taskFields as $field) {
+                $calculatedTask[$field] = $task[$field];
+            }
+
+            $calculatedTasks[] = $calculatedTask;
         }
 
         $project->calculated = $calculatedTasks;
@@ -121,7 +113,7 @@ class CalculateProjectService
                             $qa[$keyTask] = 0;
                         }
 
-                        $qa[$keyTask] += $value;
+                        $qa[$keyTask] += (float) $value;
                     }
                 }
             }
@@ -134,6 +126,96 @@ class CalculateProjectService
         $project->qa = $qa;
     }
 
+    private function setSteps (&$project): void
+    {
+        foreach ($project->steps as &$step) {
+            $step['hours_min'] = 0;
+            $step['hours_max'] = 0;
+            $step['hours_avg'] = 0;
+        }
+
+        foreach ($project->steps as &$step) {
+            foreach ($project->calculated as $calculatedTask) {
+                foreach ($calculatedTask as $key => $value) {
+                    $newKey = "{$step->code}_hours";
+
+                    if ($key === $newKey) {
+                        $step['hours_avg'] += $value;
+                    } elseif (strpos($key, $newKey) === 0) {
+                        $step[str_replace($step->code . '_', '', $key)] += $value;
+                    }
+                }
+            }
+        }
+
+        foreach ($project->steps as &$step) {
+            $step['hours_avg'] = $step['hours_max'] - $step['hours_min'];
+        }
+
+        $front  = $this->filterStep($project, 'front');
+        $back   = $this->filterStep($project, 'back');
+        $qa     = $this->filterStep($project, 'qa');
+        $buffer = $this->filterStep($project, 'buffer');
+
+
+        try {
+            $qa['hours_min'] = (float) $project->qa['front_hours_min'] + (float) $project->qa['back_hours_min'];
+        } catch (\Exception $exception) {
+            $qa['hours_min'] = 0;
+            $project->qa = [
+                'front_hours_min' => 0,
+                'back_hours_min'  => 0,
+                'front_hours_max' => 0,
+                'back_hours_max'  => 0,
+            ];
+        }
+
+        $buffer['hours_min'] =
+            (
+                $this->getAverage(
+                    $front['hours_max'] + $project->qa['front_hours_max'],
+                    $front['hours_min'] + $project->qa['front_hours_min']
+                ) -
+                $this->getAverage(
+                    $project->qa['front_hours_max'],
+                    $project->qa['front_hours_min'],
+                ) -
+                $front['hours_min']
+            )
+            +
+            (
+                $this->getAverage(
+                    $back['hours_max'] + $project->qa['back_hours_max'],
+                    $back['hours_min'] + $project->qa['back_hours_min']
+                ) -
+                $this->getAverage($project->qa['back_hours_max'], $project->qa['back_hours_min']) -
+                $back['hours_min']
+            )
+            +
+            (
+                $this->getAverage($project->qa['back_hours_max'], $project->qa['back_hours_min']) +
+                $this->getAverage($project->qa['front_hours_max'], $project->qa['front_hours_min']) -
+                ($project->qa['back_hours_min'] + $project->qa['front_hours_min'])
+            )
+        ;
+
+        $start = 0;
+        foreach ($project->steps as &$step) {
+            $numberOfWeeks = round($step['hours_min'] / $project->hours_per_week);
+            $step['weeks'] = $numberOfWeeks;
+            $step['start'] = $start;
+
+            $start += $numberOfWeeks;
+
+            $step['end'] = $start;
+
+            $step['price'] = round(
+                $step['hours_min'] * (($step->code === 'buffer') ? $project->price->qa : $project->price->{$step->code}),
+                2
+            );
+        }
+    }
+
     private function setTotal (&$project): void
     {
         $total = [
@@ -141,17 +223,16 @@ class CalculateProjectService
             'project' => []
         ];
 
-        foreach ($this->types as $type => $title) {
+        foreach ($project->steps as $step) {
             foreach ($project->calculated as $calculatedTask) {
-
                 foreach ($calculatedTask as $key => $value) {
-                    if (strpos($key, $type) === 0) {
+                    if (strpos($key, $step->code) === 0) {
 
                         if (! array_key_exists($key, $total['step'])) {
                             $total['step'][$key] = 0;
                         }
 
-                        $total['step'][$key] += $value;
+                        $total['step'][$key] += (float) $value;
                     }
                 }
             }
@@ -163,100 +244,93 @@ class CalculateProjectService
             }
         }
 
+        if (count($total['step']) === 0) {
+            foreach ($this->taskFields as $field) {
+                $total['step'][$field] = 0;
+            }
+        }
+
         $total['project']['back_price_min'] = $total['step']['front_price_min'] + $total['step']['back_price_min'] +
             $total['step']['analyst_price'] + $total['step']['designer_price_min'];
 
         $total['project']['back_price_max'] = $total['step']['front_price_max'] + $total['step']['back_price_max'] +
             $total['step']['analyst_price'] + $total['step']['designer_price_max'];
 
+        $total['project']['back_price_min'] = $this->number_format($total['project']['back_price_min']);
+        $total['project']['back_price_max'] = $this->number_format($total['project']['back_price_max']);
+
+        $clientPrice = 0;
+        foreach ($project->steps as $step) {
+            $clientPrice += $step['price'];
+        }
+
+        $total['price'] = $this->number_format($clientPrice);
+
         $project->total = $total;
     }
 
-    private function setSteps (&$project): void
+    private function setDuration (Project $project)
     {
-        $step = [];
+        $durationInWeeks = 0;
+        foreach ($project->steps as $key => $step) {
+            if ($key !== 'qa') {
+                $durationInWeeks += $step['weeks'];
+            }
+        }
 
-        foreach ($this->types as $type => $title) {
-            foreach ($project->calculated as $calculatedTask) {
-                foreach ($calculatedTask as $key => $value) {
-                    $newKey = "{$type}_hours";
+        $end = Carbon::create($project->start)->addWeeks($durationInWeeks + self::AGREEMENT_FOR)->format('d.m.Y');
 
-                    if (strpos($key, $newKey) === 0) {
+        $duration = round((Carbon::create($end)->diffInDays($project->start) - 1) / 7 / 4.5, 2);
 
-                        if (! array_key_exists($key, $step)) {
-                            $step[$key] = [
-                                'title' => $title,
-                                'hours' => 0
-                            ];
-                        }
+        $project->duration = $duration;
+        $project->start = Carbon::create($project->start)->format('Y-m-d');
+        $project->end = Carbon::create($end)->format('Y-m-d');
+    }
 
-                        $step[$key]['hours'] += $value;
-                    }
+    private function prepareNumbers (Project $project): void
+    {
+        $project->calculated = $this->prepare($project->calculated);
+        $project->qa         = $this->prepare([$project->qa])[0];
+
+        foreach ($project->steps as &$step) {
+            $step['price']     = $this->number_format($step['price']);
+            $step['hours_min'] = round((float) $step['hours_min'], 2);
+        }
+    }
+
+    private function prepare(array $array): array
+    {
+        foreach ($array as &$task) {
+            foreach ($task as $key => &$value) {
+                if (strpos($key, 'price') > 0) {
+                    $value = $this->number_format($value);
                 }
             }
         }
 
-        $step['qa']['title'] = $this->steps['qa'];
-        $step['qa']['hours'] = (float) $project->qa['front_hours_min'] + (float) $project->qa['back_hours_min'];
-
-        $step['buffer']['title'] = $this->steps['buffer'];
-        $step['buffer']['hours'] =
-            (
-                $this->getAverage(
-                    $step['front_hours_max']['hours'] + $project->qa['front_hours_max'],
-                    $step['front_hours_min']['hours'] + $project->qa['front_hours_min']
-                ) -
-                $this->getAverage(
-                    $project->qa['front_hours_max'],
-                    $project->qa['front_hours_min'],
-                ) -
-                $step['front_hours_min']['hours']
-            )
-            +
-            (
-                $this->getAverage(
-                    $step['back_hours_max']['hours'] + $project->qa['back_hours_max'],
-                    $step['back_hours_min']['hours'] + $project->qa['back_hours_min']
-                ) -
-                $this->getAverage($project->qa['back_hours_max'], $project->qa['back_hours_min']) -
-                $step['back_hours_min']['hours']
-            )
-            +
-            (
-                $this->getAverage($project->qa['back_hours_max'], $project->qa['back_hours_min']) +
-                $this->getAverage($project->qa['front_hours_max'], $project->qa['front_hours_min']) -
-                ($project->qa['back_hours_min'] + $project->qa['front_hours_min'])
-            )
-        ;
-
-
-        $newStep = [];
-        foreach ($step as $key => $item) {
-            if (strpos($key, 'max') > 0) {
-                continue;
-            }
-
-            $newKey = explode('_', $key)[0];
-
-            $newStep[$newKey] = $item;
-        }
-
-        $start = 0;
-        foreach ($newStep as &$step) {
-            $numberOfWeeks = round($step['hours'] / $project->hours_per_week);
-            $step['weeks'] = $numberOfWeeks;
-            $step['start'] = $start;
-
-            $start += $numberOfWeeks;
-
-            $step['end'] = $start;
-        }
-
-        $project->steps = $newStep;
+        return $array;
     }
 
-    private function getAverage($first, $second): float
+    private function filterStep (Project $project, string $code)
+    {
+        $filtered = $project->steps->filter(function ($step) use ($code) {
+            return $step->code === $code;
+        });
+
+        return $filtered->first();
+    }
+
+    private function getAverage(float $first, float  $second): float
     {
         return abs(($first + $second) / 2);
+    }
+
+    private function number_format (float $value): string
+    {
+        if ($value == 0) {
+            return '-';
+        }
+
+        return number_format($value, 2, '.', ' ');
     }
 }

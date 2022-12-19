@@ -27,11 +27,13 @@ class ProjectResource extends JsonResource
                 'options' => $this->options,
                 'tasks' => $this->tasks,
                 'agreementWeeks' => $this->agreementWeeks,
+                'duration' => $this->duration,
 
                 'calculated' => $this->calculated,
                 'qa' => $this->qa,
                 'total' => $this->total,
                 'steps' => $this->steps,
+                'calculatedSteps' => $this->calculatedSteps,
             ]
         ];
     }

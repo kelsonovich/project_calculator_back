@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Project;
+namespace App\Http\Requests\Project\Step;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -24,7 +24,8 @@ class UpdateStepRequest extends FormRequest
     public function rules()
     {
         return [
-            'title'             => 'required|max:255',
+//            'title'             => 'required|max:255',
+            'title'             => 'max:255',
             'employee_quantity' => 'integer',
             'agreement'         => 'integer',
             'parallels'         => 'integer',
