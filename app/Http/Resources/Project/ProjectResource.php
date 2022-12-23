@@ -28,6 +28,7 @@ class ProjectResource extends JsonResource
                 'tasks' => $this->tasks,
                 'agreementWeeks' => $this->agreementWeeks,
                 'duration' => $this->duration,
+                'countWeeks' => $this->countWeeks,
 
                 'calculated' => $this->calculated,
                 'qa' => $this->qa,

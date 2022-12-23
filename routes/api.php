@@ -28,6 +28,8 @@ Route::apiResource('step', StepController::class);
 Route::apiResource('task', TaskController::class);
 Route::apiResource('option', OptionController::class);
 Route::apiResource('project', ProjectController::class);
+Route::post('project/calculate', [ProjectController::class, 'calculate'] );
+
 
 //Route::prefix('project')->group(function () {
 //    Route::apiResource('', ProjectController::class);

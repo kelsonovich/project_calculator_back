@@ -10,7 +10,8 @@ use App\Http\Resources\Project\ProjectResource;
 use App\Models\Project;
 use App\Services\Project\CalculateProjectService;
 use App\Services\Project\CreateProjectService;
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
@@ -29,7 +30,7 @@ class ProjectController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function index()
     {
@@ -42,7 +43,7 @@ class ProjectController extends Controller
      * Store a newly created resource in storage.
      *
      * @param CreateProjectRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function store(CreateProjectRequest $request)
     {
@@ -55,7 +56,7 @@ class ProjectController extends Controller
      * Display the specified resource.
      *
      * @param  \App\Models\Project  $project
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function show(Project $project)
     {
@@ -70,7 +71,7 @@ class ProjectController extends Controller
      *
      * @param UpdateProjectRequest $request
      * @param \App\Models\Project $project
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function update(UpdateProjectRequest $request, Project $project)
     {
@@ -85,12 +86,24 @@ class ProjectController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  \App\Models\Project  $project
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function destroy(Project $project)
     {
         $project->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Calculate project
+     *
+     * @return JsonResponse
+     */
+    public function calculate(Request $request)
+    {
+        return response()->json(
+            new ProjectResource($this->calculateProjectService->get($request->project))
+        );
     }
 }

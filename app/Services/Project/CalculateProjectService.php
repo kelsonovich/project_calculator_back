@@ -35,11 +35,22 @@ class CalculateProjectService
         'back_hours_max',
     ];
 
-    public function get (Project $project): Project
+    /**
+     * Project|Array $project
+     */
+    public function get ($project)
     {
-        $this->getPrice($project);
-        $this->getOptions($project);
-        $this->getTasks($project);
+        if (is_object($project)) {
+            $this->getPrice($project);
+            $this->getOptions($project);
+            $this->getTasks($project);
+        }
+
+        if (is_array($project)) {
+            $project = (object) $project;
+            $project->price = (object) $project->price;
+            $project->steps = collect($project->steps);
+        }
 
         $this->setCalculatedTasks($project);
         $this->setQa($project);
@@ -137,12 +148,15 @@ class CalculateProjectService
         foreach ($project->steps as &$step) {
             foreach ($project->calculated as $calculatedTask) {
                 foreach ($calculatedTask as $key => $value) {
-                    $newKey = "{$step->code}_hours";
 
-                    if ($key === $newKey) {
+                    $newKey = $this->getStepCode($step);
+
+                    $newKeyHours = "{$newKey}_hours";
+
+                    if ($key === $newKeyHours) {
                         $step['hours_avg'] += $value;
-                    } elseif (strpos($key, $newKey) === 0) {
-                        $step[str_replace($step->code . '_', '', $key)] += $value;
+                    } elseif (strpos($key, $newKeyHours) === 0) {
+                        $step[str_replace($newKey . '_', '', $key)] += $value;
                     }
                 }
             }
@@ -209,8 +223,12 @@ class CalculateProjectService
 
             $step['end'] = $start;
 
+            $stepCode = $this->getStepCode($step);
+
             $step['price'] = round(
-                $step['hours_min'] * (($step->code === 'buffer') ? $project->price->qa : $project->price->{$step->code}),
+                $step['hours_min'] * (($stepCode === 'buffer')
+                    ? $project->price->qa
+                    : $project->price->$stepCode),
                 2
             );
         }
@@ -226,7 +244,7 @@ class CalculateProjectService
         foreach ($project->steps as $step) {
             foreach ($project->calculated as $calculatedTask) {
                 foreach ($calculatedTask as $key => $value) {
-                    if (strpos($key, $step->code) === 0) {
+                    if (strpos($key, $this->getStepCode($step)) === 0) {
 
                         if (! array_key_exists($key, $total['step'])) {
                             $total['step'][$key] = 0;
@@ -261,7 +279,7 @@ class CalculateProjectService
 
         $clientPrice = 0;
         foreach ($project->steps as $step) {
-            $clientPrice += $step['price'];
+            $clientPrice += (float) $step['price'];
         }
 
         $total['price'] = $this->number_format($clientPrice);
@@ -269,7 +287,7 @@ class CalculateProjectService
         $project->total = $total;
     }
 
-    private function setDuration (Project $project)
+    private function setDuration ($project)
     {
         $duration = 0;
         $durationInWeeks = 0;
@@ -282,24 +300,26 @@ class CalculateProjectService
             }
         }
 
-
         if ($durationInWeeks !== (float) 0) {
-            $end      = Carbon::create($project->start)->addWeeks($durationInWeeks + self::AGREEMENT_FOR)->format('d.m.Y');
-            $duration = round((Carbon::create($end)->diffInDays($project->start) - 1) / 7 / 4.5, 2);
+            $durationWithoutBuffer = $durationInWeeks - $this->filterStep($project, 'buffer')['weeks'];
+
+            $end      = Carbon::create($project->start)->addWeeks($durationWithoutBuffer + self::AGREEMENT_FOR)->subDay()->format('d.m.Y');
+            $duration = round((Carbon::create($end)->diffInDays($project->start)) / 7 / 4.5, 2);
         }
 
-        $project->duration = $duration;
-        $project->start    = Carbon::create($project->start)->format('Y-m-d');
-        $project->end      = Carbon::create($end)->format('Y-m-d');
+        $project->countWeeks = $durationInWeeks;
+        $project->duration   = $duration;
+        $project->start      = Carbon::create($project->start)->format('Y-m-d');
+        $project->end        = Carbon::create($end)->format('Y-m-d');
     }
 
-    private function prepareNumbers (Project $project): void
+    private function prepareNumbers ($project): void
     {
         $project->calculated = $this->prepare($project->calculated);
         $project->qa         = $this->prepare([$project->qa])[0];
 
         foreach ($project->steps as &$step) {
-            $step['price']     = $this->number_format($step['price']);
+            $step['price']     = $this->number_format((float) $step['price']);
             $step['hours_min'] = round((float) $step['hours_min'], 2);
         }
     }
@@ -317,10 +337,10 @@ class CalculateProjectService
         return $array;
     }
 
-    private function filterStep (Project $project, string $code)
+    private function filterStep (object $project, string $code)
     {
         $filtered = $project->steps->filter(function ($step) use ($code) {
-            return $step->code === $code;
+            return $this->getStepCode($step) === $code;
         });
 
         return $filtered->first();
@@ -339,4 +359,16 @@ class CalculateProjectService
 
         return number_format($value, 2, '.', ' ');
     }
+
+    private function getStepCode ($step): string
+    {
+        try {
+            $code = $step->code;
+        } catch (\Exception $exception) {
+            $code = $step['code'];
+        }
+
+        return $code;
+    }
+
 }
