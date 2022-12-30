@@ -17,24 +17,27 @@ class ProjectResource extends JsonResource
         return [
             'status' => true,
             'result' => [
-                'id' => $this->id,
-                'title' => $this->title,
-                'description' => $this->description,
-                'start' => $this->start,
-                'end' => $this->end,
+                'id'             => $this->id,
+                'title'          => $this->title,
+                'description'    => $this->description,
+                'start'          => $this->start,
+                'end'            => $this->end,
                 'hours_per_week' => $this->hours_per_week,
-                'price' => $this->price,
-                'options' => $this->options,
-                'tasks' => $this->tasks,
-                'agreementWeeks' => $this->agreementWeeks,
-                'duration' => $this->duration,
-                'countWeeks' => $this->countWeeks,
+                'price'          => $this->price,
+                'options'        => $this->options,
+                'tasks'          => $this->tasks,
+//                'duration'       => $this->duration,
+//                'countWeeks'     => $this->countWeeks,
+                'client_buffer'  => $this->client_buffer,
 
-                'calculated' => $this->calculated,
-                'qa' => $this->qa,
-                'total' => $this->total,
-                'steps' => $this->steps,
-                'calculatedSteps' => $this->calculatedSteps,
+                'calculated'      => $this->calculated,
+//                'calculatedSteps' => $this->calculatedSteps,
+                'qa'              => $this->qa,
+                'total'           => $this->total,
+                'steps'           => $this->steps,
+
+                'client'  => $this->client,
+                'company' => $this->company,
             ]
         ];
     }

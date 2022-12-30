@@ -23,12 +23,15 @@ class CreateProjectService
     {
         $project = Project::create($request->all());
 
-        foreach (self::TYPES as $code => $title) {
-            Step::create([
-                'title'      => $title,
-                'code'       => $code,
-                'project_id' => $project->id,
-            ]);
+        foreach ([true, false] as $isClient) {
+            foreach (self::TYPES as $code => $title) {
+                Step::create([
+                    'title'      => $title,
+                    'code'       => $code,
+                    'project_id' => $project->id,
+                    'isClient'   => $isClient
+                ]);
+            }
         }
 
         Price::create([

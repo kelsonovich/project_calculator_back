@@ -23,6 +23,7 @@ class Project extends Model
         'start',
         'end',
         'hours_per_week',
+        'client_buffer',
     ];
 
     /**

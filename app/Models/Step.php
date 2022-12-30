@@ -20,7 +20,7 @@ class Step extends Model
         'code',
         'description',
         'project_id',
-        'showInClient',
+//        'showInClient',
         'employee_quantity',
         'agreement',
         'parallels',
