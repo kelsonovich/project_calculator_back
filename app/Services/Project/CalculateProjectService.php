@@ -48,13 +48,13 @@ class CalculateProjectService
         if (is_object($this->project)) {
             $this->getPrice();
             $this->getOptions();
-            $this->getTasks();
         }
 
         if (is_array($this->project)) {
             $this->project = (object) $this->project;
             $this->project->price = (object) $this->project->price;
             $this->project->steps = collect($this->project->steps);
+            $this->project->tasks = collect($this->project->tasks);
         }
 
         $this->setCalculatedTasks();
@@ -80,25 +80,22 @@ class CalculateProjectService
         }
     }
 
-    private function getTasks (): void
+    private function setCalculatedTasks (): void
     {
+        $calculatedTasks = [];
         foreach ($this->project->tasks as &$task) {
-            foreach ($task->getFillable() as $key) {
+            $taskKeys = (is_array($task)) ? array_keys($task) : array_keys($task->toArray());
+
+            foreach ($taskKeys as $key) {
                 if (strpos($key, 'hours') > 0) {
                     $newKey = str_replace('hours', 'price', $key);
 
                     $type = explode('_', $key)[0];
 
-                    $task->$newKey = $task->$key * $this->project->price->$type;
+                    $task[$newKey] = $task[$key] * $this->project->price->$type;
                 }
             }
-        }
-    }
 
-    private function setCalculatedTasks (): void
-    {
-        $calculatedTasks = [];
-        foreach ($this->project->tasks as &$task) {
             $calculatedTask = [
                 'id'          => $task['id'],
                 'title'       => $task['title'],
@@ -118,6 +115,7 @@ class CalculateProjectService
     private function setQa (): void
     {
         $qa = [];
+
         foreach ($this->project->calculated as $calculatedTask) {
             foreach ($calculatedTask as $keyTask => $value) {
                 foreach ($this->qa as $key) {
@@ -137,21 +135,22 @@ class CalculateProjectService
             $value = round($value * self::QA_COEFFICIENT, 2);
         }
 
+        unset($value);
+
         $this->project->qa = $qa;
     }
 
     private function setSteps (): void
     {
+        $clientSteps  = [];
+        $companySteps = [];
         foreach ($this->project->steps as &$step) {
             $step['hours_min'] = 0;
             $step['hours_max'] = 0;
             $step['hours_avg'] = 0;
-        }
 
-        foreach ($this->project->steps as &$step) {
             foreach ($this->project->calculated as $calculatedTask) {
                 foreach ($calculatedTask as $key => $value) {
-
                     $newKey = $this->getStepCode($step);
 
                     $newKeyHours = "{$newKey}_hours";
@@ -163,17 +162,7 @@ class CalculateProjectService
                     }
                 }
             }
-        }
 
-        foreach ($this->project->steps as &$step) {
-            $step['hours_avg'] = $this->getAverage($step['hours_max'], $step['hours_min']);
-        }
-
-        unset($step);
-
-        $clientSteps  = [];
-        $companySteps = [];
-        foreach ($this->project->steps as $step) {
             if ($step['isClient']) {
                 $clientSteps[] = $step;
             } else {
@@ -181,102 +170,8 @@ class CalculateProjectService
             }
         }
 
-        unset($step);
-
-        foreach ([$clientSteps, $companySteps] as $key => $steps) {
-            $isClient = $key === 0;
-
-            $front  = $this->filterStep('front', $isClient);
-            $back   = $this->filterStep( 'back', $isClient);
-            $qa     = $this->filterStep( 'qa', $isClient);
-            $buffer = $this->filterStep('buffer', $isClient);
-
-            try {
-                $qa['hours_min'] = (float) $this->project->qa['front_hours_min'] + (float) $this->project->qa['back_hours_min'];
-                $qa['hours_avg'] = $this->getAverage(
-                    (float) $this->project->qa['front_hours_min'], (float) $this->project->qa['front_hours_max']
-                ) + $this->getAverage(
-                    (float) $this->project->qa['back_hours_min'], (float) $this->project->qa['back_hours_max']
-                );
-            } catch (\Exception $exception) {
-                $qa['hours_min'] = 0;
-                $qa['hours_max'] = 0;
-                $qa['hours_avg'] = 0;
-                $this->project->qa = [
-                    'front_hours_min' => 0,
-                    'back_hours_min'  => 0,
-                    'front_hours_max' => 0,
-                    'back_hours_max'  => 0,
-                ];
-            }
-
-            $buffer['hours_min'] =
-                (
-                    $this->getAverage(
-                        $front['hours_max'] + $this->project->qa['front_hours_max'],
-                        $front['hours_min'] + $this->project->qa['front_hours_min']
-                    ) -
-                    $this->getAverage(
-                        $this->project->qa['front_hours_max'],
-                        $this->project->qa['front_hours_min'],
-                    ) -
-                    $front['hours_min']
-                )
-                +
-                (
-                    $this->getAverage(
-                        $back['hours_max'] + $this->project->qa['back_hours_max'],
-                        $back['hours_min'] + $this->project->qa['back_hours_min']
-                    ) -
-                    $this->getAverage($this->project->qa['back_hours_max'], $this->project->qa['back_hours_min']) -
-                    $back['hours_min']
-                )
-                +
-                (
-                    $this->getAverage($this->project->qa['back_hours_max'], $this->project->qa['back_hours_min']) +
-                    $this->getAverage($this->project->qa['front_hours_max'], $this->project->qa['front_hours_min']) -
-                    ($this->project->qa['back_hours_min'] + $this->project->qa['front_hours_min'])
-                )
-            ;
-
-            $start = 0;
-            foreach ($steps as &$step) {
-                $numberOfWeeks = round($step['hours_min'] / $this->project->hours_per_week);
-
-                if ($isClient) {
-                    $numberOfWeeks = round($step['hours_avg'] / $this->project->hours_per_week);
-                }
-
-                $numberOfWeeks = floor($numberOfWeeks / $step['employee_quantity']);
-
-                $step['weeks'] = $numberOfWeeks;
-                $step['start'] = $start - $step['parallels'];
-
-                $start += $numberOfWeeks + $step['agreement'];
-
-                $offsetWeeks = $start - $numberOfWeeks;
-                $step['start_date'] = (Carbon::create($this->project->start)->addWeeks($offsetWeeks)->subDay())->format('d.m.Y');
-
-                if ($offsetWeeks === (float) 0) {
-                    $step['start_date'] = (Carbon::create($this->project->start)->addWeeks($offsetWeeks))->format('d.m.Y');
-                }
-
-                $step['end_date'] = (Carbon::create($this->project->start)->addWeeks($start)->subDay())->format('d.m.Y');
-
-                $step['end'] = $start;
-
-                $stepCode = $this->getStepCode($step);
-
-                $hoursKey = ($isClient) ? 'hours_avg' : 'hours_min';
-
-                $price = ($stepCode === 'buffer') ? $this->project->price->qa : $this->project->price->$stepCode;
-
-                $step['price'] = round($step[$hoursKey] * $price, 2);
-            }
-        }
-
-        $this->project->client  = ['steps' => $clientSteps];
-        $this->project->company = ['steps' => $companySteps];
+        $this->project->client  = ['steps' => $this->calculateSteps($clientSteps, true)];
+        $this->project->company = ['steps' => $this->calculateSteps($companySteps, false)];
     }
 
     private function setTotal (): void
@@ -388,18 +283,22 @@ class CalculateProjectService
         $this->project->calculated = $this->prepare($this->project->calculated);
         $this->project->qa         = $this->prepare([$this->project->qa])[0];
 
-        foreach ($this->project->steps as &$step) {
-            $step['price']     = $this->number_format((float) $step['price']);
-            $step['hours_min'] = round((float) $step['hours_min'], 2);
-        }
+        $this->project->client->steps  = $this->prepare($this->project->client->steps);
+        $this->project->company->steps = $this->prepare($this->project->company->steps);
     }
 
-    private function prepare(array $array): array
+    private function prepare (array $array): array
     {
-        foreach ($array as &$task) {
-            foreach ($task as $key => &$value) {
-                if (strpos($key, 'price') > 0) {
+        foreach ($array as &$item) {
+            if (is_object($item)) {
+                $item = $item->toArray();
+            }
+
+            foreach ($item as $key => &$value) {
+                if (strpos($key, 'price') > 0 || $key === 'price') {
                     $value = $this->number_format($value);
+                } elseif (strpos($key, 'hours') === 0) {
+                    $value = round($value, 2);
                 }
             }
         }
@@ -407,13 +306,24 @@ class CalculateProjectService
         return $array;
     }
 
-    private function filterStep (string $code, bool $isClient = true)
+    private function filterStep ($steps, string $code, bool $isClient = true)
     {
-        $filtered = $this->project->steps->filter(function ($step) use ($code, $isClient) {
-            return $this->getStepCode($step) === $code && (bool) $step['isClient'] === $isClient;
-        });
+        $step = null;
+        if (is_array($steps)) {
+            foreach ($steps as $filtered) {
+                if ($this->getStepCode($filtered) === $code && (bool) $filtered['isClient'] === $isClient) {
+                    return $filtered;
+                }
+            }
+        } else {
+            $filtered = $steps->filter(function ($step) use ($code, $isClient) {
+                return $this->getStepCode($step) === $code && (bool) $step['isClient'] === $isClient;
+            });
 
-        return $filtered->first();
+            $step = $filtered->first();
+        }
+
+        return $step;
     }
 
     private function getAverage(float $first, float  $second): float
@@ -421,13 +331,13 @@ class CalculateProjectService
         return abs(($first + $second) / 2);
     }
 
-    private function number_format (float $value): string
+    private function number_format ($value): string
     {
-        if ($value == 0) {
+        if (in_array($value, [0, '-'])) {
             return '-';
         }
 
-        return number_format($value, 2, '.', ' ');
+        return number_format((float) $value, 2, '.', ' ');
     }
 
     private function getStepCode ($step): string
@@ -441,4 +351,101 @@ class CalculateProjectService
         return $code;
     }
 
+    private function calculateSteps ($steps, bool $isClient)
+    {
+        $front  = $this->filterStep($steps, 'front', $isClient);
+        $back   = $this->filterStep($steps, 'back', $isClient);
+        $qa     = $this->filterStep($steps, 'qa', $isClient);
+        $buffer = $this->filterStep($steps, 'buffer', $isClient);
+
+        try {
+            $qa['hours_min'] = (float) $this->project->qa['front_hours_min'] + (float) $this->project->qa['back_hours_min'];
+            $qa['hours_max'] = (float) $this->project->qa['front_hours_max'] + (float) $this->project->qa['back_hours_max'];
+            $qa['hours_avg'] = $this->getAverage(
+                    (float) $this->project->qa['front_hours_min'], (float) $this->project->qa['front_hours_max']
+                ) + $this->getAverage(
+                    (float) $this->project->qa['back_hours_min'], (float) $this->project->qa['back_hours_max']
+                );
+        } catch (\Exception $exception) {
+            $qa['hours_min'] = 0;
+            $qa['hours_max'] = 0;
+            $qa['hours_avg'] = 0;
+            $this->project->qa = [
+                'front_hours_min' => 0,
+                'back_hours_min'  => 0,
+                'front_hours_max' => 0,
+                'back_hours_max'  => 0,
+            ];
+        }
+
+        $buffer['hours_min'] =
+            (
+                $this->getAverage(
+                    $front['hours_max'] + $this->project->qa['front_hours_max'],
+                    $front['hours_min'] + $this->project->qa['front_hours_min']
+                ) -
+                $this->getAverage(
+                    $this->project->qa['front_hours_max'],
+                    $this->project->qa['front_hours_min'],
+                ) -
+                $front['hours_min']
+            )
+            +
+            (
+                $this->getAverage(
+                    $back['hours_max'] + $this->project->qa['back_hours_max'],
+                    $back['hours_min'] + $this->project->qa['back_hours_min']
+                ) -
+                $this->getAverage($this->project->qa['back_hours_max'], $this->project->qa['back_hours_min']) -
+                $back['hours_min']
+            )
+            +
+            (
+                $this->getAverage($this->project->qa['back_hours_max'], $this->project->qa['back_hours_min']) +
+                $this->getAverage($this->project->qa['front_hours_max'], $this->project->qa['front_hours_min']) -
+                ($this->project->qa['back_hours_min'] + $this->project->qa['front_hours_min'])
+            )
+        ;
+
+        $start = 0;
+        foreach ($steps as &$step) {
+            $stepCode = $this->getStepCode($step);
+
+            $numberOfWeeks = round($step['hours_min'] / $this->project->hours_per_week);
+
+            if ($isClient) {
+                $numberOfWeeks = round($step['hours_avg'] / $this->project->hours_per_week);
+            }
+
+            $numberOfWeeks = floor($numberOfWeeks / $step['employee_quantity']);
+
+            if (! $isClient && $stepCode === 'buffer') {
+                $start -= $qa['agreement'];
+            }
+
+            $step['weeks'] = $numberOfWeeks;
+            $step['start'] = $start - $step['parallels'];
+
+            $start += $numberOfWeeks + $step['agreement'];
+
+            $offsetWeeks = $start - $numberOfWeeks;
+            $step['start_date'] = (Carbon::create($this->project->start)->addWeeks($offsetWeeks)->subDay())->format('d.m.Y');
+
+            if ($offsetWeeks === (float) 0) {
+                $step['start_date'] = (Carbon::create($this->project->start)->addWeeks($offsetWeeks))->format('d.m.Y');
+            }
+
+            $step['end_date'] = (Carbon::create($this->project->start)->addWeeks($start)->subDay())->format('d.m.Y');
+
+            $step['end'] = $start;
+
+            $hoursKey = ($isClient) ? 'hours_avg' : 'hours_min';
+
+            $price = ($stepCode === 'buffer') ? $this->project->price->qa : $this->project->price->$stepCode;
+
+            $step['price'] = round($step[$hoursKey] * $price, 2);
+        }
+
+        return $steps;
+    }
 }
