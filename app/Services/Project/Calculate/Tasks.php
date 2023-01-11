@@ -119,12 +119,12 @@ class Tasks
             foreach (self::$fields as $field) {
                 if (strpos($field, 'price') > 0) {
                     if (strpos($field, $newKey) > 0) {
-                        $value += (float) self::$steps[$field];
+                        $value += (array_key_exists($field, self::$steps)) ? (float) self::$steps[$field] : 0;
                     }
                 }
             }
 
-            $value += (float) self::$steps['analyst_price'];
+            $value += (array_key_exists('analyst_price', self::$steps)) ? (float) self::$steps['analyst_price'] : 0;
         }
     }
 }

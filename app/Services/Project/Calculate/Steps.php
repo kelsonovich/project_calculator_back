@@ -99,10 +99,6 @@ class Steps
 
         $steps = self::calculateBuffer($steps, $qa, $isClient);
 
-        foreach ($steps as &$step) {
-//            $step = $step->toArray();
-        }
-
         $lastStepDuration  = 0;
         foreach ($steps as &$step) {
             $stepCode = self::getCode($step);
@@ -113,63 +109,27 @@ class Steps
 
             /** Если это буффер для компании, то смещаем начало назад */
             if (! $isClient && $stepCode === 'buffer') {
-//                $lastStepDuration -= $qa['agreement'];
+                $lastStepDuration -= $qa['agreement'];
             }
 
-            $step['start'] = $lastStepDuration;
+            /** Смещаем начало этапа на количество запаралелленых недель */
+            $step['start'] = $lastStepDuration - $step['parallels'];
+
+            /** Количество недель, которые длился этап */
             $step['end']   = $step['start'] + $durationOnWeek + $step['agreement'];
 
+            /** Переменная длительность этапа */
             $step['weeks'] = $durationOnWeek;
 
             $lastStepDuration += $durationOnWeek + $step['agreement'];
 
+            /** Даты начала/завершения этапов */
             $step['start_date'] = DateHelper::formattingForProject(self::$project->start, $step['start']);
-            $step['end_date'] = DateHelper::formattingForProject(self::$project->start, $step['end'], true);
-
-//            /** Смещаем начало этапа на количество запаралелленых недель */
-//            $step['start'] = $lastStepDuration - $step['parallels'];
-//
-//            /** Количество недель, которые длился этап */
-//            $step['end'] = $step['start'] + $durationOnWeek;
-//
-//            /** Переменная длительность этапа */
-//            $step['weeks'] = $durationOnWeek;
-//
-//            /** Длительность этапа вместе с согласованием */
-//            $stepDuration = $durationOnWeek + $step['agreement'];
-//
-//            /** Переменная длительность этапа */
-//            $step['weeks'] = $durationOnWeek;
-//
-//            $step['start_date'] = DateHelper::formattingForProject(self::$project->start, $step['start']);
-//            $step['end_date'] = DateHelper::formattingForProject(self::$project->start, $step['end'], true);
-
-
-//            $lastStepDuration += $durationOnWeek;
-//
-//            $offsetWeeks = $lastStepDuration - $durationOnWeek + $step['agreement'];
-//
-//            if ($stepCode === 'front') {
-////                dd($step, $offsetWeeks, $numberOfWeeks);
-//            }
-//
-//            $step['start_date'] = DateHelper::formattingForProject(self::$project->start, ($offsetWeeks + $lastStepAgreement), true);
-//
-//            if ($offsetWeeks === (float) 0) {
-//                $step['start_date'] = DateHelper::formattingForProject(self::$project->start, $offsetWeeks);
-//            }
-//
-//            $step['end_date'] = DateHelper::formattingForProject(self::$project->start, $lastStepDuration, true);
-//
-//            $step['end'] = $lastStepDuration;
+            $step['end_date'] = DateHelper::formattingForProject(self::$project->start, ($step['end'] - $step['agreement']), true);
 
             $price = ($stepCode === 'buffer') ? self::$project->price->qa : self::$project->price->$stepCode;
 
             $step['price'] = round($step['hours_avg'] * $price, 2);
-        }
-
-        if ($isClient) {
-//            dd($steps);
         }
 
         return $steps;
@@ -242,31 +202,35 @@ class Steps
         $buffer = self::filterStep($steps, 'buffer', $isClient);
 
         if (! $isClient) {
-            $buffer['hours_avg'] =
-                (
-                    self::getAverage([$front['hours_max'], $front['hours_min']])
-                    -
-                    self::getAverage([self::$tasks['qa']['front_hours_max'], self::$tasks['qa']['front_hours_min']])
-                    -
-                    $front['hours_avg']
-                )
-                +
-                (
-                    self::getAverage([$back['hours_max'], $back['hours_min']])
-                    -
-                    self::getAverage([self::$tasks['qa']['back_hours_max'], self::$tasks['qa']['back_hours_min']])
-                    -
-                    $back['hours_avg']
-                )
-                +
-                (
-                    self::getAverage([self::$tasks['qa']['front_hours_max'], self::$tasks['qa']['front_hours_min']])
+            try {
+                $buffer['hours_avg'] =
+                    (
+                        self::getAverage([$front['hours_max'], $front['hours_min']])
+                        -
+                        self::getAverage([self::$tasks['qa']['front_hours_max'], self::$tasks['qa']['front_hours_min']])
+                        -
+                        $front['hours_avg']
+                    )
                     +
-                    self::getAverage([self::$tasks['qa']['back_hours_max'], self::$tasks['qa']['back_hours_min']])
-                    -
-                    $qa['hours_avg']
-                )
-            ;
+                    (
+                        self::getAverage([$back['hours_max'], $back['hours_min']])
+                        -
+                        self::getAverage([self::$tasks['qa']['back_hours_max'], self::$tasks['qa']['back_hours_min']])
+                        -
+                        $back['hours_avg']
+                    )
+                    +
+                    (
+                        self::getAverage([self::$tasks['qa']['front_hours_max'], self::$tasks['qa']['front_hours_min']])
+                        +
+                        self::getAverage([self::$tasks['qa']['back_hours_max'], self::$tasks['qa']['back_hours_min']])
+                        -
+                        $qa['hours_avg']
+                    )
+                ;
+            } catch (\Exception $exception) {
+                $buffer['hours_avg'] = 0;
+            }
 
             $steps = self::setStep($steps, $buffer);
         }
