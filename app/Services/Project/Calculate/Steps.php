@@ -99,37 +99,77 @@ class Steps
 
         $steps = self::calculateBuffer($steps, $qa, $isClient);
 
-        $start = 0;
+        foreach ($steps as &$step) {
+//            $step = $step->toArray();
+        }
+
+        $lastStepDuration  = 0;
         foreach ($steps as &$step) {
             $stepCode = self::getCode($step);
 
-            $numberOfWeeks = round($step['hours_avg'] / self::$project->hours_per_week);
+            /** Длительность этапа в неделях исходя из количества часов */
+            $durationOnWeek = round($step['hours_avg'] / self::$project->hours_per_week);
+            $durationOnWeek = floor($durationOnWeek / $step['employee_quantity']);
 
-            $numberOfWeeks = floor($numberOfWeeks / $step['employee_quantity']);
-
+            /** Если это буффер для компании, то смещаем начало назад */
             if (! $isClient && $stepCode === 'buffer') {
-                $start -= $qa['agreement'];
+//                $lastStepDuration -= $qa['agreement'];
             }
 
-            $step['weeks'] = $numberOfWeeks;
-            $step['start'] = $start - $step['parallels'];
+            $step['start'] = $lastStepDuration;
+            $step['end']   = $step['start'] + $durationOnWeek + $step['agreement'];
 
-            $start += $numberOfWeeks + $step['agreement'];
+            $step['weeks'] = $durationOnWeek;
 
-            $offsetWeeks = $start - $numberOfWeeks;
-            $step['start_date'] = DateHelper::formattingForProject(self::$project->start, $offsetWeeks, true);
+            $lastStepDuration += $durationOnWeek + $step['agreement'];
 
-            if ($offsetWeeks === (float) 0) {
-                $step['start_date'] = DateHelper::formattingForProject(self::$project->start, $offsetWeeks);
-            }
+            $step['start_date'] = DateHelper::formattingForProject(self::$project->start, $step['start']);
+            $step['end_date'] = DateHelper::formattingForProject(self::$project->start, $step['end'], true);
 
-            $step['end_date'] = DateHelper::formattingForProject(self::$project->start, $start, true);
+//            /** Смещаем начало этапа на количество запаралелленых недель */
+//            $step['start'] = $lastStepDuration - $step['parallels'];
+//
+//            /** Количество недель, которые длился этап */
+//            $step['end'] = $step['start'] + $durationOnWeek;
+//
+//            /** Переменная длительность этапа */
+//            $step['weeks'] = $durationOnWeek;
+//
+//            /** Длительность этапа вместе с согласованием */
+//            $stepDuration = $durationOnWeek + $step['agreement'];
+//
+//            /** Переменная длительность этапа */
+//            $step['weeks'] = $durationOnWeek;
+//
+//            $step['start_date'] = DateHelper::formattingForProject(self::$project->start, $step['start']);
+//            $step['end_date'] = DateHelper::formattingForProject(self::$project->start, $step['end'], true);
 
-            $step['end'] = $start;
+
+//            $lastStepDuration += $durationOnWeek;
+//
+//            $offsetWeeks = $lastStepDuration - $durationOnWeek + $step['agreement'];
+//
+//            if ($stepCode === 'front') {
+////                dd($step, $offsetWeeks, $numberOfWeeks);
+//            }
+//
+//            $step['start_date'] = DateHelper::formattingForProject(self::$project->start, ($offsetWeeks + $lastStepAgreement), true);
+//
+//            if ($offsetWeeks === (float) 0) {
+//                $step['start_date'] = DateHelper::formattingForProject(self::$project->start, $offsetWeeks);
+//            }
+//
+//            $step['end_date'] = DateHelper::formattingForProject(self::$project->start, $lastStepDuration, true);
+//
+//            $step['end'] = $lastStepDuration;
 
             $price = ($stepCode === 'buffer') ? self::$project->price->qa : self::$project->price->$stepCode;
 
             $step['price'] = round($step['hours_avg'] * $price, 2);
+        }
+
+        if ($isClient) {
+//            dd($steps);
         }
 
         return $steps;

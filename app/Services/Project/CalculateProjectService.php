@@ -92,10 +92,13 @@ class CalculateProjectService
 
             $steps = $this->project->$stepType['steps'];
 
+            $price = 0;
             foreach ($steps as $step) {
                 if (! in_array(Steps::getCode($step), ['buffer'])) {
                     $durationInWeeks += $step['weeks'] + $step['agreement'];
                 }
+
+                $price += (float) $step['price'];
             }
 
             if (self::TYPE_CLIENT === $stepType) {
@@ -110,6 +113,7 @@ class CalculateProjectService
             }
 
             $values = [
+                'price'      => $price,
                 'countWeeks' => $durationInWeeks,
                 'duration'   => $duration,
                 'start'      => DateHelper::formattingForProject($this->project->start, 0),
@@ -135,32 +139,35 @@ class CalculateProjectService
     {
         $arrayTasks = $this->project->calculated;
 
-        foreach ($arrayTasks as &$tasks) {
-            $tasks = $this->prepare($tasks);
-        }
+        $arrayTasks['tasks'] = $this->prepare($arrayTasks['tasks']);
+        $arrayTasks['qa']    = $this->prepare([$arrayTasks['qa']]);
+        $arrayTasks['steps'] = $this->prepare([$arrayTasks['steps']]);
+        $arrayTasks['total'] = $this->prepare([$arrayTasks['total']]);
+
+        $this->project->client->steps  = $this->prepare($this->project->client->steps);
+        $this->project->company->steps = $this->prepare($this->project->company->steps);
+
+        $this->project->client->price  = $this->number_format($this->project->client->price);
+        $this->project->company->price = $this->number_format($this->project->company->price);
+
+        $this->project->client->start = DateHelper::formatProjectDate($this->project->client->start);
+        $this->project->client->end   = DateHelper::formatProjectDate($this->project->client->end);
+
+        $this->project->company->start = DateHelper::formatProjectDate($this->project->company->start);
+        $this->project->company->end   = DateHelper::formatProjectDate($this->project->company->end);
 
         $this->project->calculated = $arrayTasks;
     }
 
     private function prepare ($array): array
     {
-        foreach ($array as $arrayKey => &$item) {
+        foreach ($array as &$item) {
             if (is_object($item)) {
                 $item = $item->toArray();
             }
 
-            if (! is_array($item)) {
-                if (strpos($arrayKey, 'price') > 0 || $arrayKey === 'price') {
-                    $item = $this->number_format($item);
-                } elseif (strpos($arrayKey, 'hours') === 0) {
-                    $item = round($item, 2);
-                }
-
-                continue;
-            }
-
             foreach ($item as $key => &$value) {
-                if (strpos($key, 'price') >= 0) {
+                if (strpos($key, 'price') > 0 || $key === 'price') {
                     $value = $this->number_format($value);
                 } elseif (strpos($key, 'hours') === 0) {
                     $value = round($value, 2);
