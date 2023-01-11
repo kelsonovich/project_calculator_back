@@ -8,7 +8,7 @@ use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Http\Resources\Project\ProjectCollection;
 use App\Http\Resources\Project\ProjectResource;
 use App\Models\Project;
-use App\Services\Project\CalculateProjectServiceNew;
+use App\Services\Project\CalculateProjectService;
 use App\Services\Project\CreateProjectService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,11 +16,11 @@ use Illuminate\Http\Request;
 class ProjectController extends Controller
 {
     private CreateProjectService $createProjectService;
-    private CalculateProjectServiceNew $calculateProjectService;
+    private CalculateProjectService $calculateProjectService;
 
     public function __construct(
         CreateProjectService $createProjectService,
-        CalculateProjectServiceNew $calculateProjectService
+        CalculateProjectService $calculateProjectService
     )
     {
         $this->createProjectService = $createProjectService;
