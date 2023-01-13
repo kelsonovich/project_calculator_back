@@ -54,7 +54,8 @@ class Tasks
             }
 
             $calculatedTask = [
-                'id'          => $task['id'],
+                'id'          => $task['id'] ?? null,
+//                'id'          => $task['id'],
                 'title'       => $task['title'],
                 'description' => $task['description'],
             ];

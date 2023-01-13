@@ -144,6 +144,8 @@ class CalculateProjectService
         $arrayTasks['steps'] = $this->prepare([$arrayTasks['steps']]);
         $arrayTasks['total'] = $this->prepare([$arrayTasks['total']]);
 
+        $this->project->calculated = $arrayTasks;
+
         $this->project->client->steps  = $this->prepare($this->project->client->steps);
         $this->project->company->steps = $this->prepare($this->project->company->steps);
 
@@ -155,8 +157,6 @@ class CalculateProjectService
 
         $this->project->company->start = DateHelper::formatProjectDate($this->project->company->start);
         $this->project->company->end   = DateHelper::formatProjectDate($this->project->company->end);
-
-        $this->project->calculated = $arrayTasks;
     }
 
     private function prepare ($array): array
@@ -169,7 +169,7 @@ class CalculateProjectService
             foreach ($item as $key => &$value) {
                 if (strpos($key, 'price') > 0 || $key === 'price') {
                     $value = $this->number_format($value);
-                } elseif (strpos($key, 'hours') === 0) {
+                } elseif (strpos($key, 'hours') === 0 || strpos($key, '_hours') > 0) {
                     $value = round($value, 2);
                 }
             }
