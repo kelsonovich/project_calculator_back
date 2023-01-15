@@ -3,6 +3,7 @@
 namespace App\Services\Project;
 
 use App\Helpers\DateHelper;
+use App\Services\Project\Calculate\Options;
 use App\Services\Project\Calculate\Steps;
 use App\Services\Project\Calculate\Tasks;
 use Carbon\Carbon;
@@ -30,6 +31,8 @@ class CalculateProjectService
         'back_hours_max',
     ];
 
+    private float $sumOptions = 0;
+
     /** Project|Array $this->project */
     private $project;
 
@@ -44,12 +47,13 @@ class CalculateProjectService
 
         if (is_object($this->project)) {
             $this->getPrice();
-            $this->getOptions();
         } elseif (is_array($this->project)) {
             $this->project = (object) $this->project;
             $this->project->price = (object) $this->project->price;
             $this->project->steps = collect($this->project->steps);
             $this->project->tasks = collect($this->project->tasks);
+
+            $this->project->options = collect($this->project->options);
         }
 
         /** Расчеты, связанные с задачами */
@@ -60,6 +64,10 @@ class CalculateProjectService
         );
 
         [$this->project->client, $this->project->company] = Steps::calculate($this->project);
+
+        $this->project->calculatedOptions = Options::calculate($this->project);
+
+        $this->prepareOptions();
 
         $this->setDuration();
 
@@ -73,14 +81,6 @@ class CalculateProjectService
     private function getPrice (): void
     {
         $this->project->price = $this->project->price()->first();
-    }
-
-    /** Получаем список опций из БД */
-    private function getOptions (): void
-    {
-        foreach ($this->project->options as &$option) {
-            $option->totalPrice = $option->quantity * $option->price;
-        }
     }
 
     private function setDuration (): void
@@ -113,7 +113,7 @@ class CalculateProjectService
             }
 
             $values = [
-                'price'      => $price,
+                'price'      => ($price + $this->sumOptions),
                 'countWeeks' => $durationInWeeks,
                 'duration'   => $duration,
                 'start'      => DateHelper::formattingForProject($this->project->start, 0),
@@ -123,6 +123,20 @@ class CalculateProjectService
 
             $this->project->$stepType = (object) $values;
         }
+    }
+
+    private function prepareOptions (): void
+    {
+        $options = $this->project->calculatedOptions;
+
+        foreach ($options as &$option) {
+            $this->sumOptions += (float) $option['total_price'];
+
+//            $option['price']       = $this->number_format($option['price']);
+//            $option['total_price'] = $this->number_format($option['total_price']);
+        }
+
+        $this->project->calculatedOptions = $options;
     }
 
     /** Форматирование цены */

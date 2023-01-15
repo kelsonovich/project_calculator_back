@@ -28,11 +28,13 @@ class ProjectResource extends JsonResource
                 'tasks'          => $this->tasks,
                 'client_buffer'  => $this->client_buffer,
 
-                'calculated'      => $this->calculated,
-                'steps'           => $this->steps,
+                'calculated' => $this->calculated,
+                'steps'      => $this->steps,
 
                 'client'  => $this->client,
                 'company' => $this->company,
+
+                'calculatedOptions' => $this->calculatedOptions,
             ]
         ];
     }
