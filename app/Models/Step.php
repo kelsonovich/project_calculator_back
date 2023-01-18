@@ -27,6 +27,8 @@ class Step extends Model
         'agreement',
         'parallels',
         'sort',
+        'parent_id',
+        'revision_id'
     ];
 
     /**

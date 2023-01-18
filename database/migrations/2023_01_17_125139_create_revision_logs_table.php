@@ -18,7 +18,7 @@ class CreateRevisionLogsTable extends Migration
             $table->enum('action', \App\Models\RevisionLog::ENUM_ACTIONS);
             $table->string('revisionable_type');
             $table->string('revision_id');
-            $table->string('key');
+            $table->string('key')->nullable();
             $table->text('old_value')->nullable();
             $table->text('new_value')->nullable();
             $table->softDeletes();

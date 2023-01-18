@@ -23,6 +23,8 @@ class Option extends Model
         'quantity',
         'price',
         'project_id',
+        'parent_id',
+        'revision_id'
     ];
 
     /**

@@ -28,6 +28,9 @@ class Task extends Model
         'back_hours_min',
         'back_hours_max',
         'sort',
+        'project_id',
+        'parent_id',
+        'revision_id'
     ];
 
 

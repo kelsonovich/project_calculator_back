@@ -25,6 +25,8 @@ class Price extends Model
         'qa',
         'content',
         'project_id',
+        'parent_id',
+        'revision_id'
     ];
 
     /**

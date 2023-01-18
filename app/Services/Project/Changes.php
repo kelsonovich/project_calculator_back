@@ -42,7 +42,7 @@ class Changes
 
         $models = self::prepare($newModels);
 
-        // Если проверяем изменения в отдельных сущностях
+        /** Если проверяем изменения в отдельных сущностях */
         if (in_array($entity, self::COLLECTION_TO_COMPARE)) {
             $revision['new'] = $models['new'];
 
@@ -91,6 +91,10 @@ class Changes
     {
         $changes = [];
         foreach ($oldModels as $oldModel) {
+            if (! array_key_exists((int) $oldModel->id, $newModels)) {
+                continue;
+            }
+
             $newModel = $newModels[(int) $oldModel->id];
             foreach (self::COMPARE_FIELDS[$entity] as $key) {
                 if (! array_key_exists($key, $newModel)) {
