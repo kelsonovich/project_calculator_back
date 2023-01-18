@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddProjectFieldClientBuffer extends Migration
+class AddProjectFields extends Migration
 {
     /**
      * Run the migrations.
@@ -14,7 +14,8 @@ class AddProjectFieldClientBuffer extends Migration
     public function up()
     {
         Schema::table('projects', function (Blueprint $table) {
-            $table->integer('client_buffer')->after('end')->default(0);
+            $table->integer('parent_id')->after('id')->nullable();
+            $table->string('revision_id')->after('hours_per_week')->nullable();
         });
     }
 
@@ -26,7 +27,8 @@ class AddProjectFieldClientBuffer extends Migration
     public function down()
     {
         Schema::table('projects', function (Blueprint $table) {
-            $table->dropColumn('client_buffer');
+            $table->dropColumn('parent_id');
+            $table->dropColumn('revision_id');
         });
     }
 }

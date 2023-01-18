@@ -23,3 +23,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::apiResource('project', ProjectController::class);
     Route::post('project/calculate', [ProjectController::class, 'calculate']);
 });
+
+Route::get('/test', function () {
+
+});

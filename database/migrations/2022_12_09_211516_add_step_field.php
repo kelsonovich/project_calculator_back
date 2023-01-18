@@ -25,6 +25,8 @@ class AddStepField extends Migration
      */
     public function down()
     {
-        //
+        Schema::table('steps', function (Blueprint $table) {
+            $table->dropColumn('code');
+        });
     }
 }

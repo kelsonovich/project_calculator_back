@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddStepsType extends Migration
+class AddStepRevisionField extends Migration
 {
     /**
      * Run the migrations.
@@ -14,7 +14,8 @@ class AddStepsType extends Migration
     public function up()
     {
         Schema::table('steps', function (Blueprint $table) {
-            $table->boolean('isClient')->after('sort')->default(false);
+            $table->integer('parent_id')->after('id')->nullable();
+            $table->string('revision_id')->after('sort')->nullable();
         });
     }
 
@@ -26,7 +27,8 @@ class AddStepsType extends Migration
     public function down()
     {
         Schema::table('steps', function (Blueprint $table) {
-            $table->dropColumn('isClient');
+            $table->dropColumn('parent_id');
+            $table->dropColumn('revision_id');
         });
     }
 }
