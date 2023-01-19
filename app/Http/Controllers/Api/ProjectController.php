@@ -59,11 +59,13 @@ class ProjectController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Project  $project
+     * @param  int $projectId
      * @return JsonResponse
      */
-    public function show(Project $project)
+    public function show(int $projectId, $revisionId = null)
     {
+        $project = Project::getByCondition($projectId, $revisionId);
+
         return response()->json(
             new ProjectResource($this->calculateService->get($project))
         );
@@ -78,14 +80,16 @@ class ProjectController extends Controller
      */
     public function update(UpdateProjectRequest $request, Project $project)
     {
+        dd();
+
+        dd(1, 2, 3, 4, 5);
+
         return response()->json(
             $this->updateService->update(
                 new ProjectResource($this->calculateService->get($project)),
                 $request->project
             )
         );
-
-        $project->update($request->all());
 
         return response()->json(
             new ProjectResource($this->calculateService->get($project))

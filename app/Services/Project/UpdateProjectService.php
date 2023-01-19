@@ -14,48 +14,56 @@ use Illuminate\Support\Facades\Auth;
 
 class UpdateProjectService
 {
-    public function update (ProjectResource $oldProject, array $newProject)
+    private ProjectResource $project;
+    private array $revision;
+    private array $values;
+
+    public function update (ProjectResource $oldProject, array $newProject): ProjectResource
     {
-        $revision[Project::class] = Changes::get(Project::class, collect([$oldProject]), [$newProject]);
+        $this->project = $oldProject;
 
-        $revision[Task::class]    = Changes::get(Task::class, $oldProject->tasks, $newProject['tasks']);
-        $revision[Step::class]    = Changes::get(Step::class, $oldProject->steps, $newProject['steps']);
-        $revision[Option::class]  = Changes::get(Option::class, $oldProject->options, $newProject['options']);
+        $this->values = $this->setValues($newProject);
+        foreach ($this->values as $entity => $values) {
+            $this->revision[$entity] = Changes::get($entity, $values['old'], $values['new']);
+        }
 
-        $revision[Price::class] = Changes::get(
-            Price::class,
-            collect([$oldProject->price]),
-            [$newProject['price']]
-        );
-
-
-        if ($this->updateIsNeeded($revision)) {
+        if ($this->updateIsNeeded()) {
             $revisionModel = Revisions::create([
-                'parent_id'         => $oldProject->revision_id,
+                'parent_id'         => $this->project->revision_id,
                 'revisionable_type' => Project::class,
-                'revision_id'       => $oldProject->id,
+                'revision_id'       => $this->project->id,
                 'user_id'           => Auth::id(),
             ]);
 
-            $this->createNewModel($revisionModel, Project::class, $oldProject);
+            $this->createNewProject($revisionModel);
 
-            foreach ($revision as $entity => $changes) {
-                $this->applyRevision($revisionModel, $oldProject, $entity, $changes);
+            foreach ($this->revision as $entity => $changes) {
+                $this->applyRevision($revisionModel, $entity, $changes);
             }
         }
 
-        dd(1);
+        return $oldProject;
+    }
 
-        return $project;
+    /** Формируем массив соответствий моделей -> старых данных -> новых данных */
+    private function setValues (array $newProject): array
+    {
+        return [
+            Project::class => ['old' => collect([$this->project]),        'new' => [$newProject]],
+            Task::class    => ['old' => $this->project->tasks,            'new' => $newProject['tasks']],
+            Step::class    => ['old' => $this->project->steps,            'new' => $newProject['steps']],
+            Option::class  => ['old' => $this->project->options,          'new' => $newProject['options']],
+            Price::class   => ['old' => collect([$this->project->price]), 'new' => [$newProject['price']]],
+        ];
     }
 
     /** Проверяем необходимость логирования изменений */
     /** Может просто отправили */
-    private function updateIsNeeded (array $revisions): bool
+    private function updateIsNeeded (): bool
     {
         $updateIsNeeded = false;
 
-        foreach ($revisions as $revision) {
+        foreach ($this->revision as $revision) {
             foreach ($revision as $value) {
                 if (count($value) > 0) {
                     return true;
@@ -67,38 +75,51 @@ class UpdateProjectService
     }
 
     /** Создаем новую модель и записываем ей HASH-изменений */
-    private static function createNewModel (Revisions $revisionModel, string $entity, $oldModel): void
+    private function createNewProject (Revisions $revisionModel): void
     {
-        $model = $entity::find($oldModel['id']);
-        $newModel = $model->replicate();
+        $project = Project::find($this->project['id']);
+        $newProject = $project->replicate();
 
-        $newModel->revision_id = $revisionModel->id;
+        $newProject->revision_id = $revisionModel->id;
 
-        if (is_null($newModel->parent_id)) {
-            $newModel->parent_id = $oldModel->id;
+        if (is_null($newProject->parent_id)) {
+            $newProject->parent_id = $this->project->id;
         }
 
-        $newModel->save();
+        foreach ($this->revision[Project::class]['changes'] as $change) {
+            $key = $change['key'];
+
+            $newProject->$key = $change['new_value'];
+
+            RevisionLog::create(
+                array_merge(
+                    $change,
+                    ['revision_id' => $revisionModel->id]
+                )
+            );
+        }
+
+        $newProject->save();
     }
 
     /** Проверяем и устанавливаем изменения в каждой модели */
-    private function applyRevision (Revisions $revisionModel, ProjectResource $project, string $entity, array $changes): void
+    private function applyRevision (Revisions $revisionModel, string $entity, array $changes): void
     {
         if ($entity !== Project::class) {
-            $this->setNew($revisionModel, $project, $entity, $changes['new']);
+            $this->setNew($revisionModel, $entity, $changes['new']);
 
-            dd(1);
+            $this->setChanges($revisionModel, $entity);
         }
     }
 
     /** Создаем новую модель, если создали на фронте */
-    private function setNew (Revisions $revisionModel, ProjectResource $project, string $entity, array $newModels): void
+    private function setNew (Revisions $revisionModel, string $entity, array $newModels): void
     {
         foreach ($newModels as $newModel) {
             $values = array_merge(
                 $newModel,
                 ['revision_id' => $revisionModel->id],
-                ['project_id' => $project->parent_id ?? $project->id]
+                ['project_id' => $this->project->parent_id ?? $this->project->id]
             );
 
             $model = $entity::create($values);
@@ -107,9 +128,54 @@ class UpdateProjectService
                 'action'            => RevisionLog::ACTION_CREATE,
                 'revisionable_type' => $entity,
                 'revision_id'       => $revisionModel->id,
+                'model_id'          => $model->id,
                 'key'               => 'id',
                 'new_value'         => $model->id,
             ]);
+        }
+    }
+
+    /** Применение изменений в уже существующим моделям */
+    private function setChanges (Revisions $revisionModel, string $entity): void
+    {
+        foreach ($this->values[$entity]['old'] as $oldModelValue) {
+            $oldModelId = (int) $oldModelValue['id'];
+
+            if (in_array($oldModelId, $this->revision[$entity]['removed'])) {
+                RevisionLog::create([
+                    'action'            => \App\Models\RevisionLog::ACTION_DELETE,
+                    'revisionable_type' => $entity,
+                    'revision_id'       => $revisionModel->id,
+                    'model_id'          => $oldModelId,
+                    'key'               => 'id',
+                ]);
+
+                continue;
+            }
+
+            $model = $entity::find($oldModelId);
+
+            $newModel = $model->replicate();
+
+            $newModel->parent_id   = $oldModelValue['parent_id'] ?? $oldModelValue['id'];
+            $newModel->revision_id = $revisionModel->id;
+
+            foreach ($this->revision[$entity]['changes'] as $change) {
+                if ((int) $change['model_id'] === $oldModelId) {
+                    $key = $change['key'];
+
+                    $newModel->$key = $change['new_value'];
+
+                    RevisionLog::create(
+                        array_merge(
+                            $change,
+                            ['revision_id' => $revisionModel->id]
+                        )
+                    );
+                }
+            }
+
+            $newModel->save();
         }
     }
 }

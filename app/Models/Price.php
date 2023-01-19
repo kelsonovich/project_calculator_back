@@ -42,6 +42,6 @@ class Price extends Model
 
     public function project(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(Project::class, 'revision_id', 'revision_id');
     }
 }

@@ -42,34 +42,43 @@ class Project extends Model
 
     public function price(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        return $this->hasOne(Price::class);
+        return $this->hasOne(Price::class, 'revision_id', 'revision_id');
     }
 
     public function steps(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Step::class);
+        return $this->hasMany(Step::class, 'revision_id', 'revision_id');
     }
 
     public function tasks(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Task::class);
+        return $this->hasMany(Task::class, 'revision_id', 'revision_id');
     }
 
     public function options(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Option::class);
+        return $this->hasMany(Option::class, 'revision_id', 'revision_id');
     }
 
-    public static function boot ()
+    public static function boot()
     {
         parent::boot();
 
-        static::deleted(function($product)
-        {
+        static::deleted(function ($product) {
             $product->price()->delete();
             $product->steps()->delete();
             $product->tasks()->delete();
             $product->options()->delete();
         });
+    }
+
+    public function getByCondition (int $id, $revisionId = null): Project
+    {
+        return ((is_null($revisionId)))
+            ? Project::find($id)->with('steps', 'tasks', 'options', 'price')->first()
+            : Project::where('parent_id', $id)
+                ->where('revision_id', $revisionId)
+                ->with('price', 'steps', 'tasks', 'options')
+                ->first();
     }
 }

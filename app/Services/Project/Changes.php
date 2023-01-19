@@ -105,7 +105,7 @@ class Changes
                     $changes[] = [
                         'action'            => \App\Models\RevisionLog::ACTION_UPDATE,
                         'revisionable_type' => $entity,
-                        'revision_id'       => $oldModel->id,
+                        'model_id'          => $oldModel->id,
                         'key'               => $key,
                         'old_value'         => $oldModel[$key],
                         'new_value'         => $newModel[$key],

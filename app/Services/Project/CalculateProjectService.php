@@ -46,7 +46,7 @@ class CalculateProjectService
         $this->project = $project;
 
         if (is_object($this->project)) {
-            $this->getPrice();
+//            $this->getPrice();
         } elseif (is_array($this->project)) {
             $this->project = (object) $this->project;
             $this->project->price = (object) $this->project->price;

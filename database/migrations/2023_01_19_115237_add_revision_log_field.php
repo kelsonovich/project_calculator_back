@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddRevisionParentField extends Migration
+class AddRevisionLogField extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,8 @@ class AddRevisionParentField extends Migration
      */
     public function up()
     {
-        Schema::table('revisions', function (Blueprint $table) {
-            $table->string('parent_id')->after('id')->nullable();
+        Schema::table('revision_logs', function (Blueprint $table) {
+            $table->string('model_id')->after('revision_id')->nullable();
         });
     }
 
@@ -25,8 +25,8 @@ class AddRevisionParentField extends Migration
      */
     public function down()
     {
-        Schema::table('revisions', function (Blueprint $table) {
-            $table->dropColumn('parent_id');
+        Schema::table('revision_logs', function (Blueprint $table) {
+            $table->dropColumn('model_id')->after('revision_id')->nullable();
         });
     }
 }

@@ -31,6 +31,7 @@ class RevisionLog extends Model
         'action',
         'revisionable_type',
         'revision_id',
+        'model_id',
         'key',
         'old_value',
         'new_value',
