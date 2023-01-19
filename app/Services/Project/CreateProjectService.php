@@ -31,6 +31,8 @@ class CreateProjectService
             'user_id'           => Auth::id(),
         ]);
 
+        $project->revision_id = $revision->id;
+
         foreach ([true, false] as $isClient) {
             foreach (self::TYPES as $code => $title) {
                 Step::create([
@@ -47,6 +49,8 @@ class CreateProjectService
             'project_id'  => $project->id,
             'revision_id' => $revision->id,
         ]);
+
+        $project->save();
 
         return $project;
     }

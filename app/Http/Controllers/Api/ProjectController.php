@@ -62,9 +62,13 @@ class ProjectController extends Controller
      * @param  int $projectId
      * @return JsonResponse
      */
-    public function show(int $projectId, $revisionId = null)
+    public function show(int $projectId, string $revisionId)
     {
         $project = Project::getByCondition($projectId, $revisionId);
+
+        if (! $project) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         return response()->json(
             new ProjectResource($this->calculateService->get($project))

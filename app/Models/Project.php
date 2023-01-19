@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -72,13 +73,14 @@ class Project extends Model
         });
     }
 
-    public function getByCondition (int $id, $revisionId = null): Project
+    public static function getByCondition (int $id, string $revisionId): Project|null
     {
-        return ((is_null($revisionId)))
-            ? Project::find($id)->with('steps', 'tasks', 'options', 'price')->first()
-            : Project::where('parent_id', $id)
-                ->where('revision_id', $revisionId)
-                ->with('price', 'steps', 'tasks', 'options')
-                ->first();
+        try {
+            return Project::where('revision_id', $revisionId)->where(function (\Illuminate\Database\Eloquent\Builder $query) use ($id) {
+                $query->where('id', $id)->orWhere('parent_id', $id);
+            })->first();
+        } catch (\Exception $exception) {
+            return null;
+        }
     }
 }
