@@ -73,14 +73,33 @@ class Project extends Model
         });
     }
 
-    public static function getByCondition (int $id, string $revisionId): Project|null
+//    public static function getByCondition (int $id, string $revisionId): Project|null
+    public static function getByCondition(int $id, string $revisionId)
     {
         try {
-            return Project::where('revision_id', $revisionId)->where(function (\Illuminate\Database\Eloquent\Builder $query) use ($id) {
-                $query->where('id', $id)->orWhere('parent_id', $id);
-            })->first();
+            return Project::where('revision_id', $revisionId)
+                ->where(function (\Illuminate\Database\Eloquent\Builder $query) use ($id) {
+                    $query->where('id', $id)->orWhere('parent_id', $id);
+                })->first();
         } catch (\Exception $exception) {
             return null;
         }
+    }
+
+    public static function getAll()
+    {
+        $projects = Project::where('parent_id', null)->get();
+
+        $newProjects = [];
+
+        foreach ($projects as $project) {
+            $newProject = Project::where('parent_id', $project->id)->orderBy('id', 'desc')->first();
+
+            if ($newProject) {
+                $newProjects[] = $newProject;
+            }
+        }
+
+        return $newProjects;
     }
 }

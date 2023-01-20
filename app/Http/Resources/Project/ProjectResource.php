@@ -28,6 +28,7 @@ class ProjectResource extends JsonResource
                 'tasks'          => $this->tasks,
                 'client_buffer'  => $this->client_buffer,
                 'revision_id'    => $this->revision_id,
+                'parent_id'      => $this->parent_id,
 
                 'calculated' => $this->calculated,
                 'steps'      => $this->steps,

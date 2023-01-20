@@ -39,7 +39,7 @@ class ProjectController extends Controller
     public function index()
     {
         return response()->json(
-            new ProjectCollection(Project::all())
+            new ProjectCollection(Project::getAll())
         );
     }
 
