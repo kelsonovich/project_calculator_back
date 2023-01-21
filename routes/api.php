@@ -27,5 +27,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
 });
 
 Route::get('/test', function () {
+    $model = \App\Models\Project::create(['title' => 1]);
 
+    dd($model);
 });

@@ -15,14 +15,17 @@ class CreateStepsTable extends Migration
     {
         Schema::create('steps', function (Blueprint $table) {
             $table->id();
+            $table->integer('parent_id')->nullable();
             $table->integer('project_id')->nullable();
             $table->string('title');
             $table->text('description')->nullable();
+            $table->string('code')->nullable();
             $table->integer('employee_quantity')->default(1);
             $table->integer('agreement')->default(0);
             $table->integer('parallels')->default(0);
-            $table->integer('sort')->default('100');
-            $table->boolean('showInClient')->default(true);
+            $table->integer('sort')->default(100);
+            $table->boolean('isClient')->default(false);
+            $table->string('revision_id')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

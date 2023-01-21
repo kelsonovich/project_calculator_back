@@ -15,6 +15,7 @@ class CreateTasksTable extends Migration
     {
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
+            $table->integer('parent_id')->nullable();
             $table->integer('project_id')->nullable();
             $table->string('title');
             $table->text('description')->nullable();
@@ -26,6 +27,7 @@ class CreateTasksTable extends Migration
             $table->float('front_hours_max')->nullable();
             $table->float('back_hours_min')->nullable();
             $table->float('back_hours_max')->nullable();
+            $table->string('revision_id')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

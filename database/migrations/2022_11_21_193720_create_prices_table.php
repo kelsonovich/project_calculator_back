@@ -15,6 +15,7 @@ class CreatePricesTable extends Migration
     {
         Schema::create('prices', function (Blueprint $table) {
             $table->id();
+            $table->integer('parent_id')->nullable();
             $table->integer('project_id')->nullable();
             $table->float('analyst')->default(2000);
             $table->float('designer')->default(2000);
@@ -22,6 +23,7 @@ class CreatePricesTable extends Migration
             $table->float('back')->default(2000);
             $table->float('qa')->default(2000);
             $table->float('content')->default(2000);
+            $table->string('revision_id')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

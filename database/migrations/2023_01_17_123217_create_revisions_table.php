@@ -15,6 +15,7 @@ class CreateRevisionsTable extends Migration
     {
         Schema::create('revisions', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->string('parent_id')->nullable();
             $table->string('revisionable_type')->nullable();
             $table->unsignedBigInteger('revision_id')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
