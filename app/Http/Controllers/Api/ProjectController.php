@@ -36,7 +36,7 @@ class ProjectController extends Controller
      *
      * @return JsonResponse
      */
-    public function index()
+    public function index(): JsonResponse
     {
         return response()->json(
             new ProjectCollection(Project::getAll())
@@ -49,7 +49,7 @@ class ProjectController extends Controller
      * @param CreateProjectRequest $request
      * @return JsonResponse
      */
-    public function store(CreateProjectRequest $request)
+    public function store(CreateProjectRequest $request): JsonResponse
     {
         $project = $this->createService->create($request);
 
@@ -59,10 +59,11 @@ class ProjectController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int $projectId
+     * @param string $projectId
+     * @param string $revisionId
      * @return JsonResponse
      */
-    public function show(int $projectId, string $revisionId)
+    public function show(string $projectId, string $revisionId): JsonResponse
     {
         $project = Project::getByCondition($projectId, $revisionId);
 
@@ -79,34 +80,27 @@ class ProjectController extends Controller
      * Update the specified resource in storage.
      *
      * @param UpdateProjectRequest $request
-     * @param \App\Models\Project $project
+     * @param string $projectId
      * @return JsonResponse
      */
-    public function update(UpdateProjectRequest $request, Project $project)
+    public function update(UpdateProjectRequest $request, string $projectId): JsonResponse
     {
-        dd();
+        $updatedProject = Project::getByCondition($projectId, $request->project['revision_id']);
 
-        dd(1, 2, 3, 4, 5);
-
-        return response()->json(
-            $this->updateService->update(
-                new ProjectResource($this->calculateService->get($project)),
-                $request->project
-            )
-        );
+        $newProject = $this->updateService->update($updatedProject, $request->project);
 
         return response()->json(
-            new ProjectResource($this->calculateService->get($project))
+            new ProjectResource($this->calculateService->get($newProject))
         );
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Project  $project
+     * @param Project $project
      * @return JsonResponse
      */
-    public function destroy(Project $project)
+    public function destroy(Project $project): JsonResponse
     {
         $project->delete();
 
@@ -116,9 +110,10 @@ class ProjectController extends Controller
     /**
      * Calculate project
      *
+     * @param Request $request
      * @return JsonResponse
      */
-    public function calculate(Request $request)
+    public function calculate(Request $request): JsonResponse
     {
         return response()->json(
             new ProjectResource($this->calculateService->get($request->project))

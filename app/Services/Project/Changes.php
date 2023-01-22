@@ -63,7 +63,7 @@ class Changes
         ];
 
         foreach ($newModels as $newModel) {
-            if (! is_null($newModel['id'])) {
+            if (array_key_exists('id', $newModel) && ! is_null($newModel['id']) ) {
                 $result['models'][(int) $newModel['id']] = $newModel;
             } else {
                 $result['new'][] = $newModel;

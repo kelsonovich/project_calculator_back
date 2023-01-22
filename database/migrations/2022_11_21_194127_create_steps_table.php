@@ -16,7 +16,7 @@ class CreateStepsTable extends Migration
         Schema::create('steps', function (Blueprint $table) {
             $table->id();
             $table->integer('parent_id')->nullable();
-            $table->integer('project_id')->nullable();
+            $table->string('project_id')->nullable();
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('code')->nullable();

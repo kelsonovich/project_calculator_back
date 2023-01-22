@@ -20,14 +20,12 @@ Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
 Route::group(['middleware' => ['auth:sanctum']], function() {
-    Route::get('/project/{projectId}/{revisionId?}', [ProjectController::class, 'show']);
+    Route::get('/project/{projectId}/{revisionId}', [ProjectController::class, 'show']);
 
     Route::apiResource('/project', ProjectController::class);
     Route::post('/project/calculate', [ProjectController::class, 'calculate']);
 });
 
 Route::get('/test', function () {
-    $model = \App\Models\Project::create(['title' => 1]);
 
-    dd($model);
 });

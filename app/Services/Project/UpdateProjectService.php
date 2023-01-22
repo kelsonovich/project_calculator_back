@@ -14,11 +14,11 @@ use Illuminate\Support\Facades\Auth;
 
 class UpdateProjectService
 {
-    private ProjectResource $project;
+    private Project $project;
     private array $revision;
     private array $values;
 
-    public function update (ProjectResource $oldProject, array $newProject): ProjectResource
+    public function update (Project $oldProject, array $newProject): Project
     {
         $this->project = $oldProject;
 
@@ -35,14 +35,14 @@ class UpdateProjectService
                 'user_id'           => Auth::id(),
             ]);
 
-            $this->createNewProject($revisionModel);
+            $project = $this->createNewProject($revisionModel);
 
             foreach ($this->revision as $entity => $changes) {
                 $this->applyRevision($revisionModel, $entity, $changes);
             }
         }
 
-        return $oldProject;
+        return $project ?? $oldProject;
     }
 
     /** Формируем массив соответствий моделей -> старых данных -> новых данных */
@@ -75,7 +75,7 @@ class UpdateProjectService
     }
 
     /** Создаем новую модель и записываем ей HASH-изменений */
-    private function createNewProject (Revisions $revisionModel): void
+    private function createNewProject (Revisions $revisionModel): Project
     {
         $project = Project::find($this->project['id']);
         $newProject = $project->replicate();
@@ -100,15 +100,17 @@ class UpdateProjectService
         }
 
         $newProject->save();
+
+        return $newProject;
     }
 
     /** Проверяем и устанавливаем изменения в каждой модели */
     private function applyRevision (Revisions $revisionModel, string $entity, array $changes): void
     {
         if ($entity !== Project::class) {
-            $this->setNew($revisionModel, $entity, $changes['new']);
-
             $this->setChanges($revisionModel, $entity);
+
+            $this->setNew($revisionModel, $entity, $changes['new']);
         }
     }
 
@@ -121,6 +123,10 @@ class UpdateProjectService
                 ['revision_id' => $revisionModel->id],
                 ['project_id' => $this->project->parent_id ?? $this->project->id]
             );
+
+            if (array_key_exists('title', $values)) {
+                $values['title'] = (strlen($values['title']) === 0) ? '' : $values['title'];
+            }
 
             $model = $entity::create($values);
 

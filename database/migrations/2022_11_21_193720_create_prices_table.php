@@ -16,7 +16,7 @@ class CreatePricesTable extends Migration
         Schema::create('prices', function (Blueprint $table) {
             $table->id();
             $table->integer('parent_id')->nullable();
-            $table->integer('project_id')->nullable();
+            $table->string('project_id')->nullable();
             $table->float('analyst')->default(2000);
             $table->float('designer')->default(2000);
             $table->float('front')->default(2000);

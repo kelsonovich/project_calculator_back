@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
-use Illuminate\Database\Query\Builder;
-use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,7 +11,7 @@ use Silber\Bouncer\Database\HasRolesAndAbilities;
 
 class Project extends Model
 {
-    use HasRolesAndAbilities, HasApiTokens, HasFactory, SoftDeletes;
+    use HasRolesAndAbilities, HasApiTokens, HasFactory, SoftDeletes, HasUuids;
 
     /**
      * The attributes that are mass assignable.
@@ -73,8 +71,7 @@ class Project extends Model
         });
     }
 
-//    public static function getByCondition (int $id, string $revisionId): Project|null
-    public static function getByCondition(int $id, string $revisionId)
+    public static function getByCondition (string $id, string $revisionId): Project|null
     {
         try {
             return Project::where('revision_id', $revisionId)
@@ -88,7 +85,7 @@ class Project extends Model
 
     public static function getAll()
     {
-        $projects = Project::where('parent_id', null)->get();
+        $projects = Project::where('parent_id', null)->orderBy('id', 'desc')->get();
 
         $newProjects = [];
 
@@ -97,6 +94,8 @@ class Project extends Model
 
             if ($newProject) {
                 $newProjects[] = $newProject;
+            } else {
+                $newProjects[] = $project;
             }
         }
 
