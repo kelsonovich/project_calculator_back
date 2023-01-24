@@ -3778,12 +3778,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/mailer.git",
-                "reference": "2e2ac7582e90ba5ae5a37a704634f4bc6ac882f0"
+                "reference": "c79f7baa3edbfed4bb9fbae8352a8a2d6b56fac6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/mailer/zipball/2e2ac7582e90ba5ae5a37a704634f4bc6ac882f0",
-                "reference": "2e2ac7582e90ba5ae5a37a704634f4bc6ac882f0",
+                "url": "https://api.github.com/repos/symfony/mailer/zipball/c79f7baa3edbfed4bb9fbae8352a8a2d6b56fac6",
+                "reference": "c79f7baa3edbfed4bb9fbae8352a8a2d6b56fac6",
                 "shasum": ""
             },
             "require": {
@@ -3850,7 +3850,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2023-01-13T09:23:11+00:00"
+            "time": "2023-01-23T11:55:44+00:00"
         },
         {
             "name": "symfony/mime",

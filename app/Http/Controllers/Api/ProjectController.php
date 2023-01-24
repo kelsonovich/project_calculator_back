@@ -31,29 +31,27 @@ class ProjectController extends Controller
         $this->calculateService = $calculateService;
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return JsonResponse
-     */
-    public function index(): JsonResponse
+    /** Display a listing of the resource. */
+    public function index()
     {
-        return response()->json(
-            new ProjectCollection(Project::getAll())
-        );
+        return $this->onSuccess(new ProjectCollection(Project::getAll()));
     }
 
     /**
      * Store a newly created resource in storage.
      *
      * @param CreateProjectRequest $request
+     *
      * @return JsonResponse
      */
-    public function store(CreateProjectRequest $request): JsonResponse
+//    public function store(CreateProjectRequest $request): JsonResponse
+    public function store(UpdateProjectRequest $projectRequest): JsonResponse
     {
+        return $this->onSuccess($projectRequest);
+
         $project = $this->createService->create($request);
 
-        return response()->json(new ProjectResource($project), 201);
+        return $this->onSuccess(new ProjectResource($project), __('messages.project_has_been_created'), 201);
     }
 
     /**
@@ -68,12 +66,10 @@ class ProjectController extends Controller
         $project = Project::getByCondition($projectId, $revisionId);
 
         if (! $project) {
-            return response()->json(['message' => 'Not found'], 404);
+            return $this->onError(null, __('errors.project_not_found'), 404);
         }
 
-        return response()->json(
-            new ProjectResource($this->calculateService->get($project))
-        );
+        return $this->onSuccess(new ProjectResource($this->calculateService->get($project)));
     }
 
     /**
@@ -89,8 +85,9 @@ class ProjectController extends Controller
 
         $newProject = $this->updateService->update($updatedProject, $request->project);
 
-        return response()->json(
-            new ProjectResource($this->calculateService->get($newProject))
+        return $this->onSuccess(
+            new ProjectResource($this->calculateService->get($newProject)),
+            __('messages.project_has_been_updated')
         );
     }
 
@@ -104,7 +101,7 @@ class ProjectController extends Controller
     {
         $project->delete();
 
-        return response()->json(null, 204);
+        return $this->onSuccess(null, __('messages.project_has_been_removed'), 204);
     }
 
     /**
@@ -115,8 +112,6 @@ class ProjectController extends Controller
      */
     public function calculate(Request $request): JsonResponse
     {
-        return response()->json(
-            new ProjectResource($this->calculateService->get($request->project))
-        );
+        return $this->onSuccess(new ProjectResource($this->calculateService->get($request->project)));
     }
 }

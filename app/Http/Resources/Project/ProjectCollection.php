@@ -10,13 +10,10 @@ class ProjectCollection extends ResourceCollection
      * Преобразовать коллекцию ресурса в массив.
      *
      * @param \Illuminate\Http\Request $request
-     * @return array
+     * @return \Illuminate\Support\Collection
      */
     public function toArray($request)
     {
-        return [
-            'status' => true,
-            'result' => $this->collection
-        ];
+        return $this->collection;
     }
 }

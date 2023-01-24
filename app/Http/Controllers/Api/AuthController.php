@@ -18,8 +18,8 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
+            'name'     => $request->name,
+            'email'    => $request->email,
             'password' => Hash::make($request->password)
         ]);
 
@@ -33,9 +33,9 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'User Created Successfully',
-            'token' => $user->createToken("API TOKEN")->plainTextToken
+            'token'   => $user->createToken("API TOKEN")->plainTextToken
         ]);
     }
 
@@ -48,9 +48,9 @@ class AuthController extends Controller
     {
         if (!Auth::attempt($request->only(['email', 'password']))) {
             return response()->json([
-                'status' => false,
-                'data' => $request->all(),
-                'message' => 'Email & Password does not match with our record.',
+                'status'  => false,
+                'data'    => $request->all(),
+                'message' => __('errors.login'),
             ], 401);
         }
 
