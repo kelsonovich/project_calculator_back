@@ -21,6 +21,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 
 Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::get('/project/{projectId}/{revisionId}', [ProjectController::class, 'show']);
+    Route::delete('/project/{projectId}/{revisionId}', [ProjectController::class, 'destroy']);
 
     Route::apiResource('/project', ProjectController::class);
     Route::post('/project/calculate', [ProjectController::class, 'calculate']);

@@ -101,4 +101,13 @@ class Project extends Model
 
         return $newProjects;
     }
+
+    public static function deleteAll(string $projectId): void
+    {
+        $projects = Project::where('id', $projectId)->orWhere('parent_id', $projectId);
+
+        foreach ($projects->get() as $project) {
+            $project->delete();
+        }
+    }
 }

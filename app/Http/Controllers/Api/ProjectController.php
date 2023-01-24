@@ -44,11 +44,8 @@ class ProjectController extends Controller
      *
      * @return JsonResponse
      */
-//    public function store(CreateProjectRequest $request): JsonResponse
-    public function store(UpdateProjectRequest $projectRequest): JsonResponse
+    public function store(CreateProjectRequest $request): JsonResponse
     {
-        return $this->onSuccess($projectRequest);
-
         $project = $this->createService->create($request);
 
         return $this->onSuccess(new ProjectResource($project), __('messages.project_has_been_created'), 201);
@@ -94,12 +91,12 @@ class ProjectController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param Project $project
+     * @param string $projectId
      * @return JsonResponse
      */
-    public function destroy(Project $project): JsonResponse
+    public function destroy(string $projectId, string $revisionId): JsonResponse
     {
-        $project->delete();
+        Project::deleteAll($projectId);
 
         return $this->onSuccess(null, __('messages.project_has_been_removed'), 204);
     }

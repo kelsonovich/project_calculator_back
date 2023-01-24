@@ -16,12 +16,29 @@ class UpdateProjectRequest extends FormRequest
         return true;
     }
 
+    public function attributes()
+    {
+        return [
+            'project.tasks.*.title'   => __('request.task_title'),
+            'project.steps.*.title'   => __('request.steps_title'),
+            'project.options.*.title' => __('request.options_title'),
+        ];
+    }
+
     public function messages()
     {
         return [
-            'tasks.title.required'   => __('request.tasks_title_required'),
-            'steps.title.required'   => __('request.steps_title_required'),
-            'options.title.required' => __('request.options_title_required'),
+            'project.tasks.*.title.required'   => __('request.required'),
+            'project.steps.*.title.required'   => __('request.required'),
+            'project.options.*.title.required' => __('request.required'),
+
+            'project.tasks.*.title.min'   => __('request.min_length'),
+            'project.steps.*.title.min'   => __('request.min_length'),
+            'project.options.*.title.min' => __('request.min_length'),
+
+            'project.tasks.*.title.max'   => __('request.max_length'),
+            'project.steps.*.title.max'   => __('request.max_length'),
+            'project.options.*.title.max' => __('request.max_length'),
         ];
     }
 
@@ -33,9 +50,9 @@ class UpdateProjectRequest extends FormRequest
     public function rules()
     {
         return [
-            'tasks.title'   => 'sometimes|required|min:5|max:255',
-            'steps.title'   => 'sometimes|required|min:5|max:255',
-            'options.title' => 'sometimes|required|min:5|max:255',
+            'project.tasks.*.title'   => 'sometimes|required|min:5|max:255',
+            'project.steps.*.title'   => 'sometimes|required|min:5|max:255',
+            'project.options.*.title' => 'sometimes|required|min:5|max:255',
         ];
     }
 }

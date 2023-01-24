@@ -1,7 +1,11 @@
 <?php
 
 return [
-    'tasks_title_required' => 'Наименование задачи не может быть пустым',
-    'steps_title_required' => 'Наименование этапа не может быть пустым',
-    'options_title_required' => 'Наименование опции не может быть пустым',
+    'required'   => 'Наименование :attribute не может быть пустым',
+    'min_length' => 'Длина наименования :attribute не может быть менее :min символов',
+    'max_length' => 'Длина наименования :attribute не может быть более :max символов',
+
+    'task_title'    => 'задачи',
+    'step_title'    => 'этапа',
+    'options_title' => 'дополнения',
 ];
