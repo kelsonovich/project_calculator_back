@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ProjectController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -25,16 +26,20 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
 
     Route::apiResource('/project', ProjectController::class);
     Route::post('/project/calculate', [ProjectController::class, 'calculate']);
+
+    Route::get('/company/inner', [CompanyController::class, 'getInnerCompanies']);
+    Route::get('/company/client', [CompanyController::class, 'getClients']);
+
+    Route::get('/company/{company}', [CompanyController::class, 'show']);
+    Route::post('/company', [CompanyController::class, 'store']);
+    Route::delete('/company/{company}', [CompanyController::class, 'destroy']);
+    Route::patch('/company/{company}', [CompanyController::class, 'update']);
+
 });
 
 Route::get('/test', function () {
-    $projectId = '984d29b4-590c-4d76-aac2-1d941a42ccdc';
-    $projects = \App\Models\Project::where('id', $projectId)->orWhere('parent_id', $projectId);
 
-    $test = [];
-    foreach ($projects->get() as $project) {
-        $test[] = $project->title;
-    }
-
-    dd($test);
 });
+
+
+

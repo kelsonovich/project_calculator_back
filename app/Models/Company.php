@@ -20,6 +20,22 @@ class Company extends Model
     protected $fillable = [
         'title',
         'description',
-        'isClient'
     ];
+
+    protected $hidden = [
+        'isClient',
+        'deleted_at',
+        'created_at',
+        'updated_at',
+    ];
+
+    public static function getInnerCompanies()
+    {
+        return Company::where('isClient', false)->get();
+    }
+
+    public static function getClients()
+    {
+        return Company::where('isClient', true)->get();
+    }
 }

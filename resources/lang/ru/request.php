@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'required'   => 'Наименование :attribute не может быть пустым',
+    'required'   => 'Название :attribute не может быть пустым',
     'min_length' => 'Название :attribute не может быть менее :min символов',
     'max_length' => 'Название :attribute не может быть более :max символов',
 
@@ -9,4 +9,6 @@ return [
     'step_title'    => 'этапа',
     'options_title' => 'дополнения',
     'project_title' => 'проекта',
+
+    'company_title' => 'компании',
 ];
