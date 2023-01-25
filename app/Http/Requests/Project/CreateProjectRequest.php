@@ -16,6 +16,22 @@ class CreateProjectRequest extends FormRequest
         return true;
     }
 
+    public function attributes()
+    {
+        return [
+            'title' => __('request.project_title'),
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'title.required' => __('request.required'),
+            'title.min'      => __('request.min_length'),
+            'title.max'      => __('request.max_length'),
+        ];
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,7 +40,7 @@ class CreateProjectRequest extends FormRequest
     public function rules()
     {
         return [
-            'title' => 'required|max:255',
+            'title' => 'required|min:5|max:255',
         ];
     }
 }

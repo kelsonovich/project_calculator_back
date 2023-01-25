@@ -28,5 +28,13 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
 });
 
 Route::get('/test', function () {
+    $projectId = '984d29b4-590c-4d76-aac2-1d941a42ccdc';
+    $projects = \App\Models\Project::where('id', $projectId)->orWhere('parent_id', $projectId);
 
+    $test = [];
+    foreach ($projects->get() as $project) {
+        $test[] = $project->title;
+    }
+
+    dd($test);
 });

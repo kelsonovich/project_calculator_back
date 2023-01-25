@@ -92,6 +92,7 @@ class ProjectController extends Controller
      * Remove the specified resource from storage.
      *
      * @param string $projectId
+     * @param string $revisionId
      * @return JsonResponse
      */
     public function destroy(string $projectId, string $revisionId): JsonResponse
