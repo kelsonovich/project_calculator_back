@@ -35,6 +35,9 @@ class ProjectResource extends JsonResource
             'company' => $this->company,
 
             'calculatedOptions' => $this->calculatedOptions,
+
+            'clientCompany' => $this->clientCompany,
+            'innerCompany'  => $this->innerCompany,
         ];
     }
 }

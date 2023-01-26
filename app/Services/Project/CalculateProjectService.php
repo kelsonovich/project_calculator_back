@@ -45,6 +45,11 @@ class CalculateProjectService
     {
         $this->project = $project;
 
+        /** TO DO */
+        $this->project->clientCompany = $this->project->client;
+        $this->project->innerCompany  = $this->project->company;
+        [$this->project->client, $this->project->company] = [null, null];
+
         if (is_object($this->project)) {
 //            $this->getPrice();
         } elseif (is_array($this->project)) {

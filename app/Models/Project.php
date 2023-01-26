@@ -25,6 +25,8 @@ class Project extends Model
         'end',
         'hours_per_week',
         'client_buffer',
+        'client_id',
+        'company_id',
     ];
 
     /**
@@ -58,6 +60,17 @@ class Project extends Model
     {
         return $this->hasMany(Option::class, 'revision_id', 'revision_id');
     }
+
+    public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
 
     public static function boot()
     {
