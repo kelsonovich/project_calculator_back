@@ -50,9 +50,7 @@ class CalculateProjectService
         $this->project->innerCompany  = $this->project->company;
         [$this->project->client, $this->project->company] = [null, null];
 
-        if (is_object($this->project)) {
-//            $this->getPrice();
-        } elseif (is_array($this->project)) {
+        if (is_array($this->project)) {
             $this->project = (object) $this->project;
             $this->project->price = (object) $this->project->price;
             $this->project->steps = collect($this->project->steps);
@@ -68,6 +66,8 @@ class CalculateProjectService
             $this->taskFields
         );
 
+        $this->project->steps->sortBy('sort');
+
         [$this->project->client, $this->project->company] = Steps::calculate($this->project);
 
         $this->project->calculatedOptions = Options::calculate($this->project);
@@ -79,13 +79,6 @@ class CalculateProjectService
         $this->prepareNumbers();
 
         return $this->project;
-    }
-
-
-    /** Получаем цену из БД */
-    private function getPrice (): void
-    {
-        $this->project->price = $this->project->price()->first();
     }
 
     private function setDuration (): void
@@ -114,7 +107,7 @@ class CalculateProjectService
 //                $durationWithoutBuffer = $durationInWeeks - Steps::filterStep($steps, 'buffer', (self::TYPE_CLIENT === $stepType))['weeks'];
 
                 $end      = DateHelper::formattingForProject($this->project->start, $durationInWeeks, true);
-                $duration = round((Carbon::create($end)->diffInDays($this->project->start)) / 7 / 4.5, 2);
+                $duration = round((Carbon::create($this->project->start)->diffInDays($end)) / 7 / 4.5, 2);
             }
 
             $values = [
@@ -136,9 +129,6 @@ class CalculateProjectService
 
         foreach ($options as &$option) {
             $this->sumOptions += (float) $option['total_price'];
-
-//            $option['price']       = $this->number_format($option['price']);
-//            $option['total_price'] = $this->number_format($option['total_price']);
         }
 
         $this->project->calculatedOptions = $options;

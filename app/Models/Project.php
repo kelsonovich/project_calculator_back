@@ -48,17 +48,17 @@ class Project extends Model
 
     public function steps(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Step::class, 'revision_id', 'revision_id');
+        return $this->hasMany(Step::class, 'revision_id', 'revision_id')->orderBy('sort');
     }
 
     public function tasks(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Task::class, 'revision_id', 'revision_id');
+        return $this->hasMany(Task::class, 'revision_id', 'revision_id')->orderBy('sort');
     }
 
     public function options(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Option::class, 'revision_id', 'revision_id');
+        return $this->hasMany(Option::class, 'revision_id', 'revision_id')->orderBy('sort');
     }
 
     public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
