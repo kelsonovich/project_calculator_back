@@ -58,7 +58,7 @@ class Tasks
 //                'id'          => $task['id'],
                 'title'       => $task['title'],
                 'description' => $task['description'],
-                'sort'        => $task['sort'],
+                'sort'        => $task['sort'] ?? 100,
             ];
 
             foreach (self::$fields as $field) {

@@ -46,10 +46,6 @@ class CalculateProjectService
         $this->project = $project;
 
         /** TO DO */
-        $this->project->clientCompany = $this->project->client;
-        $this->project->innerCompany  = $this->project->company;
-        [$this->project->client, $this->project->company] = [null, null];
-
         if (is_array($this->project)) {
             $this->project = (object) $this->project;
             $this->project->price = (object) $this->project->price;
@@ -57,6 +53,12 @@ class CalculateProjectService
             $this->project->tasks = collect($this->project->tasks);
 
             $this->project->options = collect($this->project->options);
+        }
+
+        if (is_null($this->project->clientCompany) && is_null($this->project->innerCompany)) {
+            $this->project->clientCompany = $this->project->client;
+            $this->project->innerCompany  = $this->project->company;
+            [$this->project->client, $this->project->company] = [null, null];
         }
 
         /** Расчеты, связанные с задачами */
